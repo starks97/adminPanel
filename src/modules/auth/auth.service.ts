@@ -1,12 +1,14 @@
+import { PrismaService } from './../../../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
-//import { CreateAuthDto } from './dto/create-auth.dto';
+import { CreateAuthDto } from './dto/create-auth.dto';
+import { User } from '@prisma/client';
 //import { UpdateAuthDto } from './dto/update-auth.dto';
 
 @Injectable()
 export class AuthService {
-  /*create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
-  }*/
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
 
   findAll() {
     return `This action returns all auth`;
