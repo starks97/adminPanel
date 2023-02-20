@@ -1,52 +1,68 @@
+import { Response } from 'express';
+
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
+  Query,
+  Res,
+  ForbiddenException,
+  Get,
+  Patch,
 } from '@nestjs/common';
-import { UserService } from './user.service';
-//import { CreateUserDto } from './dto/create-user.dto';
-//import { UpdateUserDto } from './dto/update-user.dto';
+
 import { ApiTags } from '@nestjs/swagger';
+
+import { UserService } from './user.service';
+
+import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 
 @ApiTags('user')
 @Controller('user')
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
-  /*@Post()
+  @Post('create_account')
   create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
-  }*/
+    return this.userService.createUser(createUserDto);
+  }
 
-  @Get()
-  findAll() {
-    return this.userService.findAll();
+  @Post('login')
+  findByLogin(@Body() { email, password }: LoginUserDto, @Res() res: Response) {
+    const response = this.userService.FindByLogin({ email, password });
+
+    if (!response) throw new ForbiddenException('user_not_logged');
+
+    return res.status(200).json({ message: 'user_logged' });
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateDataUser: UpdateUserDto, @Res() res: Response) {
+    const response = this.userService.UpdateDataUser(id, updateDataUser);
+
+    if (!response) throw new ForbiddenException('user_not_updated');
+
+    return res.status(200).json({ message: 'user_updated' });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
+  findUserById(@Param('id') id: string) {
+    return this.userService.FindUserById(id);
   }
 
-  /*@Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    return this.userService.update(
-      +id,
-      updateUserDto,
-    );
-  }*/
+  @Get()
+  searchUser(@Query('search_user_by') query: string) {
+    return this.userService.FindUserByEmailorName(query);
+  }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+  remove(@Param('id') id: string, @Res() res: Response) {
+    const response = this.userService.DeleteUser(id);
+
+    if (!response) throw new ForbiddenException('user_not_deleted');
+
+    return res.status(200).json({ message: 'user_deleted' });
   }
 }

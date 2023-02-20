@@ -1,14 +1,12 @@
-import CryptoES from 'crypto-es';
+import * as bcrypt from 'bcryptjs';
 
 export default class PasswordHasher {
   static setHashPassword(password: string) {
-    const hashedPassword = CryptoES.SHA256(password).toString(CryptoES.enc.Base64);
-    return hashedPassword;
+    const salt = bcrypt.genSaltSync(10);
+    return bcrypt.hashSync(password, salt);
   }
 
   static compareHashPassword(password: string, oldPassword: string) {
-    const hashedPassword = PasswordHasher.setHashPassword(password);
-
-    return hashedPassword === oldPassword;
+    return bcrypt.compareSync(password, oldPassword);
   }
 }
