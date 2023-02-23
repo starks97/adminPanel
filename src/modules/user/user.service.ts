@@ -55,13 +55,10 @@ export class UserService {
   }
 
   async FindUserById(id: string): Promise<User | null> {
-    const user = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
+        password: false,
       },
     });
 
@@ -112,6 +109,8 @@ export class UserService {
         name: true,
         role: true,
       },
+      skip: 0,
+      take: 10,
     });
 
     return (users as User[]) || [];
@@ -120,14 +119,12 @@ export class UserService {
   async UpdateDataUser(id: string, data: UpdateUserDto): Promise<User | null> {
     const { name, password, role } = data;
 
-    const oldDataUser = await this.FindUserById(id);
-
     const newDataUser = await this.prisma.user.update({
       where: { id },
       data: {
-        name: name || oldDataUser.name,
-        password: password ? PasswordHasher.setHashPassword(password) : oldDataUser.password,
-        role: role || oldDataUser.role,
+        name: name,
+        password: password ? PasswordHasher.setHashPassword(password) : undefined,
+        role: role,
       },
     });
 
@@ -136,7 +133,7 @@ export class UserService {
 
   async DeleteUser(id: string): Promise<User | null> {
     this.FindUserById(id);
-
+    //handle delete time
     const deletedUser = await this.prisma.user.delete({
       where: { id },
     });

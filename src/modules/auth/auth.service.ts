@@ -1,28 +1,29 @@
+import { UserService } from './../user/user.service';
+
+import { JWTPayload } from './interfaces/jwt.interface';
 import { PrismaService } from './../../../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { User } from '@prisma/client';
+
 //import { UpdateAuthDto } from './dto/update-auth.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService, private readonly userService: UserService) {}
 
-  findAll() {
+  async SignIn() {
     return `This action returns all auth`;
   }
 
-  findOne(id: number) {
+  SignUp(id: number) {
     return `This action returns a #${id} auth`;
   }
 
-  /*update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }*/
-
-  remove(id: number) {
+  SignOut(id: number) {
     return `This action removes a #${id} auth`;
+  }
+
+  async ValidateUser({ id, email }: JWTPayload) {
+    const user = await this.userService.FindUserById(id);
+    return user;
   }
 }

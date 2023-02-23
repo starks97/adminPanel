@@ -24,11 +24,12 @@ import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  //use in auth controller
   @Post('create_account')
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.createUser(createUserDto);
   }
-
+  //use in auth controller
   @Post('login')
   findByLogin(@Body() { email, password }: LoginUserDto, @Res() res: Response) {
     const response = this.userService.FindByLogin({ email, password });
