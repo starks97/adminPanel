@@ -1,29 +1,68 @@
-import { UserService } from './../user/user.service';
-
-import { JWTPayload } from './interfaces/jwt.interface';
 import { PrismaService } from './../../../prisma/prisma.service';
-import { Injectable } from '@nestjs/common';
+
+import { ForbiddenException, Injectable } from '@nestjs/common';
+
+import { JwtService } from '@nestjs/jwt';
+
+import { CreateUserDto } from './../user/dto/create-user.dto';
+import { RegistrationStatus, LoginStatus, JWTPayload } from './interfaces';
+import { LoginUserDto } from './../user/dto/login-user.dto';
+import { UserService } from './../user/user.service';
 
 //import { UpdateAuthDto } from './dto/update-auth.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService, private readonly userService: UserService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  async SignIn() {
-    return `This action returns all auth`;
+  async SignUp(userData: CreateUserDto): Promise<RegistrationStatus> {
+    const user = await this.userService.createUser(userData);
+
+    if (!user) {
+      throw new ForbiddenException({
+        message: 'user_not_created',
+        success: false,
+      });
+    }
+
+    return {
+      message: 'user_created',
+      data: user,
+      success: true,
+    };
   }
 
-  SignUp(id: number) {
-    return `This action returns a #${id} auth`;
+  async SignIn({ email, password }: LoginUserDto): Promise<LoginStatus> {
+    const user = await this.userService.FindByLogin({ email, password });
+
+    if (!user) {
+      throw new ForbiddenException({
+        message: 'user_not_found',
+        success: false,
+      });
+    }
+
+    const { id, password: pass, ...rest } = user;
+
+    const token = this._createToken({ id, email });
+
+    return {
+      message: 'user_logged',
+      data: { token, rest },
+      success: true,
+    };
   }
 
   SignOut(id: number) {
     return `This action removes a #${id} auth`;
   }
 
-  async ValidateUser({ id, email }: JWTPayload) {
-    const user = await this.userService.FindUserById(id);
-    return user;
+  private _createToken({ id, email }: JWTPayload): string {
+    const payload: JWTPayload = { id, email };
+    return this.jwtService.sign(payload);
   }
 }

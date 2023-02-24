@@ -49,18 +49,15 @@ export class UserService {
       throw new HttpException('password_not_match', HttpStatus.NOT_FOUND);
     }
 
-    const { name, role } = user;
-
-    return { email, name, role } as User;
+    return user;
   }
 
   async FindUserById(id: string): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: {
-        password: false,
-      },
     });
+
+    delete user.password;
 
     if (!user) {
       throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
@@ -125,6 +122,7 @@ export class UserService {
         name: name,
         password: password ? PasswordHasher.setHashPassword(password) : undefined,
         role: role,
+        updatedAt: new Date(),
       },
     });
 

@@ -7,24 +7,28 @@ import { Request } from 'express';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private authService: AuthService) {
+  constructor() {
     super({
-      jwtFromRequest: (req: Request) => {
-        if (!req?.cookies?.admin_token) {
-          return null;
-        }
-        return req?.cookies?.admin_token;
-      },
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        JwtStrategy.extractJWT,
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
+
       ignoreExpiration: false,
       secretOrKey: process.env.SECRET_JWT_KEY as string,
     });
   }
 
-  async validate(payload: JWTPayload) {
-    const user = await this.authService.ValidateUser(payload);
-    if (!user) {
-      throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
+  private static extractJWT(req: Request): string | null {
+    console.log(req.cookies);
+    if (req.cookies && 'auth_token' in req.cookies && req.cookies.auth_token.length > 0) {
+      return req.cookies.auth_token;
     }
-    return user;
+    return null;
+  }
+
+  //return decoded token
+  async validate(payload: JWTPayload) {
+    return { id: payload.id, username: payload.email };
   }
 }

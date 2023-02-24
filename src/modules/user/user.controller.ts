@@ -11,33 +11,20 @@ import {
   ForbiddenException,
   Get,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
 
 import { ApiTags } from '@nestjs/swagger';
 
 import { UserService } from './user.service';
 
-import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
+import { UpdateUserDto } from './dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('user')
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-
-  //use in auth controller
-  @Post('create_account')
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.createUser(createUserDto);
-  }
-  //use in auth controller
-  @Post('login')
-  findByLogin(@Body() { email, password }: LoginUserDto, @Res() res: Response) {
-    const response = this.userService.FindByLogin({ email, password });
-
-    if (!response) throw new ForbiddenException('user_not_logged');
-
-    return res.status(200).json({ message: 'user_logged' });
-  }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDataUser: UpdateUserDto, @Res() res: Response) {
@@ -47,7 +34,7 @@ export class UserController {
 
     return res.status(200).json({ message: 'user_updated' });
   }
-
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findUserById(@Param('id') id: string) {
     return this.userService.FindUserById(id);
