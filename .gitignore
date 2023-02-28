@@ -17,6 +17,8 @@ docker-compose.yaml
 .DS_Store
 .env
 
+Dockerfile
+
 # Tests
 /coverage
 /.nyc_output

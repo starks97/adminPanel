@@ -5,15 +5,11 @@ import { CacheSystemService } from './cache-system.service';
 
 @Module({
   imports: [
-    CacheModule.registerAsync({
-      useFactory: () => ({
-        store: typeof redisStore,
-        host: 'redis',
-        port: 32768,
-        ttl: 60,
-        url: 'redis://default:redispw@localhost:32768',
-      }),
-      isGlobal: true,
+    CacheModule.register({
+      store: redisStore as any,
+      host: 'localhost',
+      port: 6379,
+      ttl: 60 * 60 * 24,
     }),
   ],
 

@@ -40,21 +40,8 @@ export class UserController {
   }
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findUserById(@Param('id') id: string) {
-    const cachedData = await this.cache.get('user_');
-
-    if (cachedData) {
-      return cachedData;
-    }
-
-    const user = await this.userService.FindUserById(id);
-
-    const setDataCache = await this.cache.set('user_', id);
-
-    return {
-      user,
-      setDataCache,
-    };
+  findUserById(@Param('id') id: string) {
+    return this.userService.FindUserById(id);
   }
 
   @Get()

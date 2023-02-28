@@ -1,3 +1,4 @@
+import { CacheSystemService } from '../cache-system/cache-system.service';
 import { Response } from 'express';
 
 import { ApiTags } from '@nestjs/swagger';
@@ -20,7 +21,20 @@ import { LoginUserDto, CreateUserDto } from '../user/dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly cacheManager: CacheSystemService,
+  ) {}
+
+  @Get('cache')
+  async testCache() {
+    const cached = await this.cacheManager.set('testing1', 'test');
+    console.log(cached);
+
+    return {
+      message: 'data cached',
+    };
+  }
 
   @Post('signup')
   create(@Body() createUserDto: CreateUserDto) {

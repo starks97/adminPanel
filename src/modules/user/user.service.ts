@@ -53,6 +53,12 @@ export class UserService {
   }
 
   async FindUserById(id: string): Promise<User | null> {
+    const dataCache = await this.cache.get('user');
+
+    if (dataCache) {
+      return dataCache.id;
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -62,6 +68,10 @@ export class UserService {
     if (!user) {
       throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
     }
+
+    console.log('call from db');
+
+    await this.cache.set('user', user);
 
     return user as User;
   }
