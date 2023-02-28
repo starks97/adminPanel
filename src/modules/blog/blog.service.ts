@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { CreateBlogDto } from './dto/create-blog.dto';
-import { UpdateBlogDto } from './dto/update-blog.dto';
+//import { CreateBlogDto } from './dto/create-blog.dto';
+//import { UpdateBlogDto } from './dto/update-blog.dto';
 
 @Injectable()
 export class BlogService {
-  create(createBlogDto: CreateBlogDto) {
+  /*create(createBlogDto: CreateBlogDto) {
     return 'This action adds a new blog';
-  }
+  }*/
 
   findAll() {
     return `This action returns all blog`;
@@ -16,9 +16,9 @@ export class BlogService {
     return `This action returns a #${id} blog`;
   }
 
-  update(id: number, updateBlogDto: UpdateBlogDto) {
+  /*update(id: number, updateBlogDto: UpdateBlogDto) {
     return `This action updates a #${id} blog`;
-  }
+  }*/
 
   remove(id: number) {
     return `This action removes a #${id} blog`;

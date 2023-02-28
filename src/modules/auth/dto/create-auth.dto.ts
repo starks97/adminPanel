@@ -1,7 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'nestjs-zod/z';
 
-const UserSchema = z
+/*const UserSchema = z
   .object({
     email: z
       .string({
@@ -33,8 +33,9 @@ const UserSchema = z
         });
       }
     },
-  );
+  );*/
 
-export class CreateAuthDto extends createZodDto(
+/*export class CreateAuthDto extends createZodDto(
   UserSchema,
 ) {}
+*/

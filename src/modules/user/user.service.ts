@@ -1,3 +1,4 @@
+import { CacheSystemService } from '../cache-system/cache-system.service';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 
 import { User } from '@prisma/client';
@@ -8,7 +9,7 @@ import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly cache: CacheSystemService) {}
 
   async createUser(createUser: CreateUserDto): Promise<User | null> {
     const { email, name, password, role } = createUser;
@@ -33,7 +34,6 @@ export class UserService {
       },
     });
   }
-
   async FindByLogin({ email, password }: LoginUserDto): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
       where: { email },

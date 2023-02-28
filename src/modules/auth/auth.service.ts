@@ -4,12 +4,10 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
 
-import { CreateUserDto } from './../user/dto/create-user.dto';
+import { CreateUserDto, LoginUserDto } from './../user/dto';
 import { RegistrationStatus, LoginStatus, JWTPayload } from './interfaces';
-import { LoginUserDto } from './../user/dto/login-user.dto';
-import { UserService } from './../user/user.service';
 
-//import { UpdateAuthDto } from './dto/update-auth.dto';
+import { UserService } from './../user/user.service';
 
 @Injectable()
 export class AuthService {
@@ -63,6 +61,7 @@ export class AuthService {
 
   private _createToken({ id, email }: JWTPayload): string {
     const payload: JWTPayload = { id, email };
+
     return this.jwtService.sign(payload);
   }
 }

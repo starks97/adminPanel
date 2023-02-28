@@ -6,7 +6,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Request } from 'express';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -20,7 +20,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   private static extractJWT(req: Request): string | null {
-    console.log(req.cookies);
     if (req.cookies && 'auth_token' in req.cookies && req.cookies.auth_token.length > 0) {
       return req.cookies.auth_token;
     }
@@ -29,6 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   //return decoded token
   async validate(payload: JWTPayload) {
-    return { id: payload.id, username: payload.email };
+    if (!payload) throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
+    return payload;
   }
 }

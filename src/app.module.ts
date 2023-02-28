@@ -1,14 +1,17 @@
-import { PrismaModule } from './../prisma/prisma.module';
-import { Module } from '@nestjs/common';
+import { Module, CACHE_MANAGER } from '@nestjs/common';
 import { APP_PIPE } from '@nestjs/core';
 
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
-import { CacheModule } from './modules/cache/cache.module';
 import { BlogModule } from './modules/blog/blog.module';
+
+import { PrismaModule } from './../prisma/prisma.module';
+import { CacheSystemModule } from './modules/cache-system/cache-system.module';
+import { CacheSystemService } from './modules/cache-system/cache-system.service';
+
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule, CacheModule, BlogModule],
+  imports: [AuthModule, UserModule, PrismaModule, BlogModule, CacheSystemModule],
   controllers: [],
   providers: [
     {

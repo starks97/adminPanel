@@ -20,11 +20,15 @@ import { UserService } from './user.service';
 
 import { UpdateUserDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CacheSystemService } from '../cache-system/cache-system.service';
 
 @ApiTags('user')
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly cache: CacheSystemService,
+  ) {}
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDataUser: UpdateUserDto, @Res() res: Response) {
@@ -36,8 +40,21 @@ export class UserController {
   }
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findUserById(@Param('id') id: string) {
-    return this.userService.FindUserById(id);
+  async findUserById(@Param('id') id: string) {
+    const cachedData = await this.cache.get('user_');
+
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const user = await this.userService.FindUserById(id);
+
+    const setDataCache = await this.cache.set('user_', id);
+
+    return {
+      user,
+      setDataCache,
+    };
   }
 
   @Get()
