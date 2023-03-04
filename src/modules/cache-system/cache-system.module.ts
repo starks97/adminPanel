@@ -6,10 +6,10 @@ import { CacheSystemService } from './cache-system.service';
 @Module({
   imports: [
     CacheModule.register({
-      store: redisStore as any,
+      store: redisStore,
       host: 'localhost',
       port: 6379,
-      ttl: 60 * 60 * 24,
+      ttl: 60,
     }),
   ],
 

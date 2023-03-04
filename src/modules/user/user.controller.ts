@@ -30,6 +30,12 @@ export class UserController {
     private readonly cache: CacheSystemService,
   ) {}
 
+  @Get('all')
+  async findAllUser() {
+    return await this.userService.FindAllUsers();
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDataUser: UpdateUserDto, @Res() res: Response) {
     const response = this.userService.UpdateDataUser(id, updateDataUser);
@@ -38,6 +44,7 @@ export class UserController {
 
     return res.status(200).json({ message: 'user_updated' });
   }
+
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   findUserById(@Param('id') id: string) {

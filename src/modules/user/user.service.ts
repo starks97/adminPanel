@@ -12,6 +12,8 @@ export class UserService {
   constructor(private readonly prisma: PrismaService, private readonly cache: CacheSystemService) {}
 
   async createUser(createUser: CreateUserDto): Promise<User | null> {
+    //const dataCache = await this.cache.get('all_users');
+
     const { email, name, password, role } = createUser;
 
     // // check if the user exists in the db
@@ -25,7 +27,7 @@ export class UserService {
       throw new HttpException('user_already_exist', HttpStatus.CONFLICT);
     }
 
-    return await this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         email,
         name,
@@ -33,6 +35,18 @@ export class UserService {
         role: role || 'PUBLIC',
       },
     });
+
+    /*if (dataCache) {
+      await this.cache.set('all_users', [...dataCache, user]);
+    }*/
+
+    this.cache.cacheState<User>({
+      model: 'user',
+      storeKey: 'all_users',
+      exclude: ['password'],
+    });
+
+    return user;
   }
   async FindByLogin({ email, password }: LoginUserDto): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
@@ -53,25 +67,24 @@ export class UserService {
   }
 
   async FindUserById(id: string): Promise<User | null> {
-    const dataCache = await this.cache.get('user');
+    const dataCache = await this.cache.get('user:' + id);
 
     if (dataCache) {
-      return dataCache.id;
+      return dataCache;
     }
 
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
 
-    delete user.password;
-
     if (!user) {
       throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
     }
+    delete user.password;
 
     console.log('call from db');
 
-    await this.cache.set('user', user);
+    await this.cache.set('user:' + id, user, 60);
 
     return user as User;
   }
@@ -98,6 +111,7 @@ export class UserService {
         email: true,
         name: true,
         role: true,
+        createdAt: true,
       },
     });
 
@@ -109,21 +123,35 @@ export class UserService {
   }
 
   async FindAllUsers(): Promise<User[] | null> {
+    const dataCache = await this.cache.get('all_users');
+
+    if (dataCache) return dataCache;
+
     const users = await this.prisma.user.findMany({
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
+        createdAt: true,
+        updatedAt: true,
       },
       skip: 0,
       take: 10,
+    });
+
+    await this.cache.cacheState<User>({
+      model: 'user',
+      storeKey: 'all_users',
+      exclude: ['password'],
     });
 
     return (users as User[]) || [];
   }
 
   async UpdateDataUser(id: string, data: UpdateUserDto): Promise<User | null> {
+    //const cacheData = await this.cache.get('all_users');
+
     const { name, password, role } = data;
 
     const newDataUser = await this.prisma.user.update({
@@ -136,6 +164,29 @@ export class UserService {
       },
     });
 
+    delete newDataUser.password;
+
+    /*if (cacheData) {
+      cacheData.find(user => {
+        if (user.id === id) {
+          user.name = name;
+          user.role = role;
+
+          return true;
+        }
+      });
+
+      console.log('data from db');
+
+      await this.cache.set('all_users', cacheData);
+    }*/
+
+    await this.cache.cacheState<User>({
+      model: 'user',
+      storeKey: 'all_users',
+      exclude: ['password'],
+    });
+
     return newDataUser;
   }
 
@@ -146,6 +197,42 @@ export class UserService {
       where: { id },
     });
 
+    await this.cache.cacheState<User>({ model: 'user', storeKey: 'all_users' });
+
     return deletedUser;
+  }
+
+  async UpdateUserTransaction(id: string, data: UpdateUserDto): Promise<User | null> {
+    const { name, password, role } = data;
+
+    const [newDataUser, allUsers] = await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id },
+        data: {
+          name: name,
+          password: password ? PasswordHasher.setHashPassword(password) : undefined,
+          role: role,
+          updatedAt: new Date(),
+        },
+      }),
+      this.prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      }),
+    ]);
+
+    if (!newDataUser || !allUsers) {
+      throw new HttpException('error_update_user', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    delete newDataUser.password;
+
+    await this.cache.set('all_users', allUsers);
+
+    return newDataUser;
   }
 }
