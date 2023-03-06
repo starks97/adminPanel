@@ -1,3 +1,4 @@
+import { MailModule } from './../mail/mail.module';
 import { JwtModule } from '@nestjs/jwt';
 
 import { Module, CACHE_MANAGER } from '@nestjs/common';
@@ -22,6 +23,7 @@ import { CacheSystemModule } from '../cache-system/cache-system.module';
       signOptions: { expiresIn: '1d' },
     }),
     CacheSystemModule,
+    MailModule,
   ],
 })
 export class AuthModule {}

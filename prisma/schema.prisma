@@ -20,11 +20,49 @@ model User {
   //Roles
   role Roles @default(PUBLIC)
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
-  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  //RELATIONS
+  profile   Profile?
+  post      Post[]
+}
+
+model Profile {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  bio       String
+  image     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  //RELATIONS
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique @db.ObjectId
+}
+
+model Post {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String    @unique
+  content     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  deletedAt   DateTime?
+  //RELATIONS
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String    @db.ObjectId
+
+  comments Comment?
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   //RELATIONS
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String @unique @db.ObjectId
 }
 
 enum Roles {

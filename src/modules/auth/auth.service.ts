@@ -1,3 +1,5 @@
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { ForgotPassStatus } from './interfaces/forgotPass.interface';
 import { PrismaService } from './../../../prisma/prisma.service';
 
 import { ForbiddenException, Injectable } from '@nestjs/common';
@@ -8,6 +10,7 @@ import { CreateUserDto, LoginUserDto } from './../user/dto';
 import { RegistrationStatus, LoginStatus, JWTPayload } from './interfaces';
 
 import { UserService } from './../user/user.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +18,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
+    private readonly jwt: JwtStrategy,
   ) {}
 
   async SignUp(userData: CreateUserDto): Promise<RegistrationStatus> {
@@ -55,13 +60,21 @@ export class AuthService {
     };
   }
 
-  SignOut(id: number) {
-    return `This action removes a #${id} auth`;
-  }
-
   private _createToken({ id, email }: JWTPayload): string {
     const payload: JWTPayload = { id, email };
 
     return this.jwtService.sign(payload);
+  }
+
+  private _verifyToken(token: string): JWTPayload {
+    return this.jwtService.verify(token);
+  }
+
+  async ForgotPassword(token: string) {
+    const decoded = this._verifyToken(token);
+
+    if (!decoded) throw new ForbiddenException('invalid_token');
+
+    return decoded;
   }
 }

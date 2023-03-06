@@ -1,3 +1,4 @@
+import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 
@@ -152,19 +153,16 @@ export class UserService {
   async UpdateDataUser(id: string, data: UpdateUserDto): Promise<User | null> {
     //const cacheData = await this.cache.get('all_users');
 
-    const { name, password, role } = data;
+    const { name, role } = data;
 
     const newDataUser = await this.prisma.user.update({
       where: { id },
       data: {
         name: name,
-        password: password ? PasswordHasher.setHashPassword(password) : undefined,
         role: role,
         updatedAt: new Date(),
       },
     });
-
-    delete newDataUser.password;
 
     /*if (cacheData) {
       cacheData.find(user => {
@@ -192,7 +190,6 @@ export class UserService {
 
   async DeleteUser(id: string): Promise<User | null> {
     this.FindUserById(id);
-    //handle delete time
     const deletedUser = await this.prisma.user.delete({
       where: { id },
     });
@@ -203,14 +200,13 @@ export class UserService {
   }
 
   async UpdateUserTransaction(id: string, data: UpdateUserDto): Promise<User | null> {
-    const { name, password, role } = data;
+    const { name, role } = data;
 
     const [newDataUser, allUsers] = await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id },
         data: {
           name: name,
-          password: password ? PasswordHasher.setHashPassword(password) : undefined,
           role: role,
           updatedAt: new Date(),
         },
@@ -229,10 +225,27 @@ export class UserService {
       throw new HttpException('error_update_user', HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    delete newDataUser.password;
-
     await this.cache.set('all_users', allUsers);
 
     return newDataUser;
+  }
+
+  async UpdateUserPassword(id: string, pass: UpdateUserPasswordDto) {
+    const newUserPassword = await this.prisma.user.update({
+      where: { id },
+      data: {
+        password: pass ? PasswordHasher.setHashPassword(pass.password) : undefined,
+        updatedAt: new Date(),
+      },
+    });
+    delete newUserPassword.password;
+
+    await this.cache.cacheState<User>({
+      model: 'user',
+      storeKey: 'all_users',
+      exclude: ['password'],
+    });
+
+    return newUserPassword;
   }
 }

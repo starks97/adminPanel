@@ -9,9 +9,10 @@ import { BlogModule } from './modules/blog/blog.module';
 import { PrismaModule } from './../prisma/prisma.module';
 import { CacheSystemModule } from './modules/cache-system/cache-system.module';
 import { CacheSystemService } from './modules/cache-system/cache-system.service';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule, BlogModule, CacheSystemModule],
+  imports: [AuthModule, UserModule, PrismaModule, BlogModule, CacheSystemModule, MailModule],
   controllers: [],
   providers: [
     {

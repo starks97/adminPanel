@@ -1,5 +1,4 @@
-import { CacheSystemService } from '../cache-system/cache-system.service';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 
 import { ApiTags } from '@nestjs/swagger';
 import {
@@ -13,6 +12,7 @@ import {
   Res,
   ForbiddenException,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
@@ -21,24 +21,13 @@ import { LoginUserDto, CreateUserDto } from '../user/dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly cacheManager: CacheSystemService,
-  ) {}
-
-  @Get('cache')
-  async testCache() {
-    const cached = await this.cacheManager.set('testing1', 'test');
-    console.log(cached);
-
-    return {
-      message: 'data cached',
-    };
-  }
+  constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.authService.SignUp(createUserDto);
+  async createUser(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
+    const response = await this.authService.SignUp(createUserDto);
+
+    return res.status(200).json(response);
   }
 
   //@UseGuards(LocalAuthGuard)
@@ -53,6 +42,20 @@ export class AuthController {
       sameSite: 'strict',
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1.5),
     });
+
+    return res.status(200).json(response);
+  }
+
+  @Post('logout')
+  logout(@Res() res: Response) {
+    res.clearCookie('auth_token');
+    return res.status(200).json({ message: 'user_logged_out', success: true });
+  }
+
+  @Get('/forgot-password')
+  forgotPassword(@Res() res: Response, @Req() req: Request) {
+    const cookie = req.cookies.auth_token as string;
+    const response = this.authService.ForgotPassword(cookie);
 
     return res.status(200).json(response);
   }
