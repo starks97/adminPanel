@@ -9,7 +9,7 @@ import { CacheSystemService } from './cache-system.service';
       store: redisStore,
       host: 'localhost',
       port: 6379,
-      ttl: 60,
+      ttl: 180,
     }),
   ],
 

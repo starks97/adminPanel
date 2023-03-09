@@ -52,10 +52,13 @@ export class AuthController {
     return res.status(200).json({ message: 'user_logged_out', success: true });
   }
 
-  @Get('/forgot-password')
-  forgotPassword(@Res() res: Response, @Req() req: Request) {
-    const cookie = req.cookies.auth_token as string;
-    const response = this.authService.ForgotPassword(cookie);
+  @Post('/forgot_password')
+  forgotPassword(@Res() res: Response, @Body() email: string, @Req() req: Request) {
+    const tokenFromCookies = req.cookies.auth_token;
+
+    const verifyToken = this.authService._verifyToken(tokenFromCookies);
+
+    const response = this.authService.ForgotPassword(verifyToken.id, email);
 
     return res.status(200).json(response);
   }

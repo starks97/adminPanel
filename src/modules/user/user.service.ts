@@ -33,7 +33,7 @@ export class UserService {
         email,
         name,
         password: hashedPassword,
-        role: role || 'PUBLIC',
+        role,
       },
     });
 
@@ -82,8 +82,6 @@ export class UserService {
       throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
     }
     delete user.password;
-
-    console.log('call from db');
 
     await this.cache.set('user:' + id, user, 60);
 
@@ -238,7 +236,6 @@ export class UserService {
         updatedAt: new Date(),
       },
     });
-    delete newUserPassword.password;
 
     await this.cache.cacheState<User>({
       model: 'user',
@@ -247,5 +244,25 @@ export class UserService {
     });
 
     return newUserPassword;
+  }
+
+  async findUserByEmail(email: string): Promise<User | null> {
+    const dataCache = await this.cache.get('user:' + email);
+
+    if (dataCache) {
+      return dataCache;
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
+
+    delete user.password;
+
+    await this.cache.set('user:' + email, user, 60);
+
+    return user;
   }
 }

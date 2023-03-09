@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { Injectable, CACHE_MANAGER, Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
@@ -35,7 +35,7 @@ export class CacheSystemService {
 
   async cacheState<T>({ model, storeKey, exclude }: CacheStateProps<T>): Promise<T[] | null> {
     // const dataUser = await this.cacheState<User>()
-    const data = (await this.prisma[model].findMany({})) as T[];
+    const data: T[] = await (this.prisma as any)[model].findMany({});
 
     if (exclude) {
       data.forEach(model => {
@@ -43,7 +43,7 @@ export class CacheSystemService {
       });
     }
 
-    await this.set(storeKey, data, 60 * 60);
+    await this.set(storeKey, data);
 
     return data;
   }

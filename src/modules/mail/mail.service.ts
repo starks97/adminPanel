@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { IMail } from './interface/mail.interface';
 
@@ -9,7 +9,7 @@ export class MailService {
   async sendUserConfirmation(user: IMail, token: string) {
     const url = `http://localhost:3000/auth/confirm?token=${token}`;
 
-    await this.mailer.sendMail({
+    const newEmail = await this.mailer.sendMail({
       to: user.email,
       subject: 'Confirm the action',
       template: './confirmation',
@@ -18,5 +18,11 @@ export class MailService {
         url,
       },
     });
+
+    if (!newEmail) {
+      throw new ForbiddenException({
+        message: 'email_not_sent',
+      });
+    }
   }
 }

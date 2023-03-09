@@ -1,21 +1,20 @@
 import { MailModule } from './../mail/mail.module';
 import { JwtModule } from '@nestjs/jwt';
 
-import { Module, CACHE_MANAGER } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
-import { CacheSystemService } from '../cache-system/cache-system.service';
-import { LocalStrategy } from './strategies/local.strategy';
 import { UserModule } from './../user/user.module';
 
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtStrategy, LocalStrategy, RefreshTokenStrategy } from './strategies';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
+import { SessionModule } from './session/session.module';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy],
+  providers: [AuthService, JwtStrategy, LocalStrategy, RefreshTokenStrategy],
   imports: [
     UserModule,
     JwtModule.register({
@@ -24,6 +23,7 @@ import { CacheSystemModule } from '../cache-system/cache-system.module';
     }),
     CacheSystemModule,
     MailModule,
+    SessionModule,
   ],
 })
 export class AuthModule {}

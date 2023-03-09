@@ -1,6 +1,8 @@
 import { Module, CACHE_MANAGER } from '@nestjs/common';
 import { APP_PIPE } from '@nestjs/core';
 
+import { ConfigModule } from '@nestjs/config';
+
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
@@ -8,11 +10,22 @@ import { BlogModule } from './modules/blog/blog.module';
 
 import { PrismaModule } from './../prisma/prisma.module';
 import { CacheSystemModule } from './modules/cache-system/cache-system.module';
-import { CacheSystemService } from './modules/cache-system/cache-system.service';
+
 import { MailModule } from './modules/mail/mail.module';
 
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule, BlogModule, CacheSystemModule, MailModule],
+  imports: [
+    AuthModule,
+    UserModule,
+    PrismaModule,
+    BlogModule,
+    CacheSystemModule,
+    MailModule,
+    ConfigModule.forRoot({
+      envFilePath: '.env',
+      isGlobal: true,
+    }),
+  ],
   controllers: [],
   providers: [
     {

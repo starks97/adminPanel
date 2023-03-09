@@ -6,6 +6,7 @@ export const updateUserPasswordSchema = UserSchema.omit({
   email: true,
   name: true,
   role: true,
+  refreshToken: true,
 }).partial();
 
 export class UpdateUserPasswordDto extends createZodDto(updateUserPasswordSchema) {}

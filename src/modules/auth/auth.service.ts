@@ -1,13 +1,16 @@
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { ForgotPassStatus } from './interfaces/forgotPass.interface';
-import { PrismaService } from './../../../prisma/prisma.service';
-
 import { ForbiddenException, Injectable } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+
+import { JWTPayload } from './interfaces';
+import { UpdateUserPasswordDto } from './../user/dto/updatePass-user.dto';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { ForgotPassStatus, ForgotPassPayload } from './interfaces/forgotPass.interface';
+import { PrismaService } from './../../../prisma/prisma.service';
 
 import { CreateUserDto, LoginUserDto } from './../user/dto';
-import { RegistrationStatus, LoginStatus, JWTPayload } from './interfaces';
+import { RegistrationStatus, LoginStatus } from './interfaces';
 
 import { UserService } from './../user/user.service';
 import { MailService } from '../mail/mail.service';
@@ -20,6 +23,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly jwt: JwtStrategy,
+    private readonly configService: ConfigService,
   ) {}
 
   async SignUp(userData: CreateUserDto): Promise<RegistrationStatus> {
@@ -60,21 +64,44 @@ export class AuthService {
     };
   }
 
-  private _createToken({ id, email }: JWTPayload): string {
-    const payload: JWTPayload = { id, email };
-
+  private _createToken(payload: JWTPayload | ForgotPassPayload): string {
     return this.jwtService.sign(payload);
   }
 
-  private _verifyToken(token: string): JWTPayload {
+  _verifyToken(token: string): JWTPayload {
     return this.jwtService.verify(token);
   }
 
-  async ForgotPassword(token: string) {
-    const decoded = this._verifyToken(token);
+  async ForgotPassword(email: string, id: string): Promise<ForgotPassStatus> {
+    const user = await this.userService.FindUserById(id);
 
-    if (!decoded) throw new ForbiddenException('invalid_token');
+    const forgotToken = Math.random().toString(36).substring(2, 15);
 
-    return decoded;
+    const new_token = this._createToken({ id: user.id, email: user.email, forgotToken });
+
+    delete user.password;
+
+    await this.mailService.sendUserConfirmation(user, new_token);
+
+    return {
+      message: 'email_sent',
+      data: { id: user.id, email, forgotToken },
+      success: true,
+    };
+  }
+
+  private async _createTokens(payload: JWTPayload) {
+    const [authToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.get<string>('SECRET_JWT_KEY'),
+        expiresIn: '15m',
+      }),
+      this.jwtService.signAsync(payload, {
+        secret: this.configService.get<string>('REFRESH_JWT_KEY'),
+        expiresIn: '7d',
+      }),
+    ]);
+
+    return { authToken, refreshToken };
   }
 }
