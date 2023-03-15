@@ -1,3 +1,4 @@
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { Response, Request } from 'express';
 
 import { ApiTags } from '@nestjs/swagger';
@@ -37,7 +38,13 @@ export class AuthController {
 
     if (!response) throw new ForbiddenException('user_not_logged');
 
-    res.cookie('auth_token', response.data?.token, {
+    res.cookie('auth_token', response.data?.access_token, {
+      httpOnly: true,
+      sameSite: 'strict',
+      expires: new Date(Date.now() + 1000 * 60 * 15),
+    });
+
+    res.cookie('refresh_token', response.data?.refresh_token, {
       httpOnly: true,
       sameSite: 'strict',
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1.5),
@@ -49,10 +56,32 @@ export class AuthController {
   @Post('logout')
   logout(@Res() res: Response) {
     res.clearCookie('auth_token');
+    res.clearCookie('refresh_token');
     return res.status(200).json({ message: 'user_logged_out', success: true });
   }
 
-  @Post('/forgot_password')
+  @UseGuards(RefreshTokenGuard)
+  @Get('refresh_token')
+  async refreshToken(@Req() req: Request, @Res() res: Response) {
+    const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
+
+    const response = await this.authService.refreshToken(decoded[0], req.cookies.refresh_token);
+
+    res.cookie('auth_token', response.authToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      expires: new Date(Date.now() + 1000 * 60 * 15),
+    });
+
+    /*res.cookie('refresh_token', response.refreshToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1.5),
+    });*/
+
+    return res.status(200).json({ message: 'token_refreshed', success: true, data: response });
+  }
+  /*@Post('/forgot_password')
   forgotPassword(@Res() res: Response, @Body() email: string, @Req() req: Request) {
     const tokenFromCookies = req.cookies.auth_token;
 
@@ -61,5 +90,5 @@ export class AuthController {
     const response = this.authService.ForgotPassword(verifyToken.id, email);
 
     return res.status(200).json(response);
-  }
+  }*/
 }

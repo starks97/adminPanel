@@ -9,7 +9,7 @@ type T_KEYS<T> = keyof T;
   return rest;
 }*/
 interface CacheStateProps<T> {
-  model: Uncapitalize<Prisma.ModelName>;
+  models: Uncapitalize<Prisma.ModelName>[];
   storeKey: string;
   exclude?: T_KEYS<T>[];
 }
@@ -25,25 +25,29 @@ export class CacheSystemService {
     return await this.cacheManager.get(key);
   }
 
-  async set(key: string, value: any, ttl?: number) {
+  async set(key: string, value: any, ttl: number) {
     return await this.cacheManager.set(key, value, ttl);
   }
 
-  async del(key: string) {
-    return await this.cacheManager.del(key);
-  }
-
-  async cacheState<T>({ model, storeKey, exclude }: CacheStateProps<T>): Promise<T[] | null> {
+  async cacheState<T>({ models, storeKey, exclude }: CacheStateProps<T>): Promise<T[][] | null> {
     // const dataUser = await this.cacheState<User>()
-    const data: T[] = await (this.prisma as any)[model].findMany({});
 
-    if (exclude) {
-      data.forEach(model => {
-        exclude.forEach(excludeKey => delete model[excludeKey]);
-      });
-    }
+    const data = await Promise.all(
+      models.map(async model => {
+        const modelData: T[] = await (this.prisma as any)[model].findMany({});
 
-    await this.set(storeKey, data);
+        if (exclude) {
+          modelData.map(data => {
+            exclude.map(key => {
+              delete data[key];
+            });
+          });
+        }
+        return modelData;
+      }),
+    );
+
+    await this.set(storeKey, data, 1000);
 
     return data;
   }

@@ -21,14 +21,15 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
 
   private static extractJWT(req: Request): string | null {
     if (req.cookies && 'refresh_token' in req.cookies && req.cookies.refresh_token.length > 0) {
-      return req.cookies.auth_token;
+      return req.cookies.refresh_token;
     }
     return null;
   }
 
-  validate(req: Request, payload: JWTPayload) {
-    const refreshToken = RefreshTokenStrategy.extractJWT(req);
-    return { ...payload, refreshToken };
+  async validate(payload: JWTPayload) {
+    if (!payload) throw new Error('Invalid token');
+
+    return payload;
     //validate from user database  still validate or not
   }
 }

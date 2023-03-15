@@ -30,7 +30,8 @@ export class UserController {
     private readonly cache: CacheSystemService,
   ) {}
 
-  @Get('all')
+  @UseGuards(JwtAuthGuard)
+  @Get('all_users')
   async findAllUser() {
     return await this.userService.FindAllUsers();
   }

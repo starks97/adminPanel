@@ -1,3 +1,4 @@
+import { SessionManagerService } from './session/session.service';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
@@ -24,6 +25,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly jwt: JwtStrategy,
     private readonly configService: ConfigService,
+    private readonly session: SessionManagerService,
   ) {}
 
   async SignUp(userData: CreateUserDto): Promise<RegistrationStatus> {
@@ -39,12 +41,17 @@ export class AuthService {
     return {
       message: 'user_created',
       data: user,
+
       success: true,
     };
   }
 
   async SignIn({ email, password }: LoginUserDto): Promise<LoginStatus> {
     const user = await this.userService.FindByLogin({ email, password });
+
+    const tokens = await this._createTokens({ id: user.id, email: user.email });
+
+    await this.session.createSessionAndOverride(user.id, tokens.refreshToken);
 
     if (!user) {
       throw new ForbiddenException({
@@ -55,24 +62,28 @@ export class AuthService {
 
     const { id, password: pass, ...rest } = user;
 
-    const token = this._createToken({ id, email });
-
     return {
       message: 'user_logged',
-      data: { token, rest },
+      data: { access_token: tokens.authToken, refresh_token: tokens.refreshToken, rest },
       success: true,
     };
   }
 
-  private _createToken(payload: JWTPayload | ForgotPassPayload): string {
-    return this.jwtService.sign(payload);
+  async refreshToken(userId: string, token: string) {
+    const userSession = await this.session.findSessionByUser(userId, token);
+
+    const tokens = await this._createTokens({ id: userSession.id, email: userSession.email });
+
+    await this.session.updateSession(userSession.id, tokens.refreshToken);
+
+    return tokens;
   }
 
-  _verifyToken(token: string): JWTPayload {
-    return this.jwtService.verify(token);
+  _decodeToken(token: string) {
+    return this.jwtService.decode(token);
   }
 
-  async ForgotPassword(email: string, id: string): Promise<ForgotPassStatus> {
+  /*async ForgotPassword(email: string, id: string): Promise<ForgotPassStatus> {
     const user = await this.userService.FindUserById(id);
 
     const forgotToken = Math.random().toString(36).substring(2, 15);
@@ -88,7 +99,7 @@ export class AuthService {
       data: { id: user.id, email, forgotToken },
       success: true,
     };
-  }
+  }*/
 
   private async _createTokens(payload: JWTPayload) {
     const [authToken, refreshToken] = await Promise.all([
