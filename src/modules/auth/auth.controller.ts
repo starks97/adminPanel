@@ -67,17 +67,11 @@ export class AuthController {
 
     const response = await this.authService.refreshToken(decoded[0], req.cookies.refresh_token);
 
-    res.cookie('auth_token', response.authToken, {
+    res.cookie('auth_token', response, {
       httpOnly: true,
       sameSite: 'strict',
       expires: new Date(Date.now() + 1000 * 60 * 15),
     });
-
-    /*res.cookie('refresh_token', response.refreshToken, {
-      httpOnly: true,
-      sameSite: 'strict',
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1.5),
-    });*/
 
     return res.status(200).json({ message: 'token_refreshed', success: true, data: response });
   }

@@ -10,7 +10,13 @@ import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService, private readonly cache: CacheSystemService) {}
+  constructor(private readonly prisma: PrismaService, private readonly cache: CacheSystemService) {
+    this.cache._configModel('user', {
+      include: {
+        sessions: true,
+      },
+    });
+  }
 
   async createUser(createUser: CreateUserDto): Promise<User | null> {
     const { email, name, password, role } = createUser;
@@ -38,7 +44,13 @@ export class UserService {
       },
     });
 
-    await this.cache.set('all_users', user, 1000);
+    //await this.cache.set('all_users', user, 1000);
+
+    await this.cache.cacheState<User>({
+      model: 'user',
+      storeKey: 'all_users',
+      exclude: ['password'],
+    });
 
     return user;
   }
@@ -140,7 +152,11 @@ export class UserService {
       take: 10,
     });
 
-    await this.cache.set('all_users', users, 1000);
+    await this.cache.cacheState<User>({
+      model: 'user',
+      storeKey: 'all_users',
+      exclude: ['password'],
+    });
 
     return users || [];
   }
@@ -161,7 +177,7 @@ export class UserService {
     });
 
     await this.cache.cacheState<User>({
-      models: ['user'],
+      model: 'user',
       storeKey: 'all_users',
       exclude: ['password'],
     });
@@ -175,7 +191,7 @@ export class UserService {
       where: { id },
     });
 
-    await this.cache.cacheState<User>({ models: ['user'], storeKey: 'all_users' });
+    await this.cache.cacheState<User>({ model: 'user', storeKey: 'all_users' });
 
     return deletedUser;
   }
@@ -193,7 +209,7 @@ export class UserService {
     });
 
     await this.cache.cacheState<User>({
-      models: ['user'],
+      model: 'user',
       storeKey: 'all_users',
       exclude: ['password'],
     });

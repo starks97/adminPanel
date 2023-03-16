@@ -5,9 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
 import { JWTPayload } from './interfaces';
-import { UpdateUserPasswordDto } from './../user/dto/updatePass-user.dto';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { ForgotPassStatus, ForgotPassPayload } from './interfaces/forgotPass.interface';
 import { PrismaService } from './../../../prisma/prisma.service';
 
 import { CreateUserDto, LoginUserDto } from './../user/dto';
@@ -76,7 +74,7 @@ export class AuthService {
 
     await this.session.updateSession(userSession.id, tokens.refreshToken);
 
-    return tokens;
+    return tokens.authToken;
   }
 
   _decodeToken(token: string) {

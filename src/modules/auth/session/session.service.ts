@@ -1,11 +1,10 @@
-import { CacheSystemService } from './../../cache-system/cache-system.service';
 import { PrismaService } from './../../../../prisma/prisma.service';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Session, User } from '@prisma/client';
 
 @Injectable()
 export class SessionManagerService {
-  constructor(private readonly prisma: PrismaService, private readonly cache: CacheSystemService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async createSession(userId: string, token: string) {
     const session = await this.prisma.session.create({
