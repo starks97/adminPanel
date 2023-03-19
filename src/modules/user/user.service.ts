@@ -44,8 +44,6 @@ export class UserService {
       },
     });
 
-    //await this.cache.set('all_users', user, 1000);
-
     await this.cache.cacheState<User>({
       model: 'user',
       storeKey: 'all_users',

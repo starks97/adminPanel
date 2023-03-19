@@ -6,27 +6,6 @@ import { Session, User } from '@prisma/client';
 export class SessionManagerService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createSession(userId: string, token: string) {
-    const session = await this.prisma.session.create({
-      data: {
-        token,
-        User: {
-          connect: {
-            id: userId,
-          },
-        },
-      },
-
-      include: {
-        User: true,
-      },
-    });
-
-    if (!session) {
-      throw new Error('session_not_created');
-    }
-  }
-
   async createSessionAndOverride(userId: string, token: string) {
     return await this.prisma.$transaction(async ctx => {
       const user = await ctx.user.findUnique({
@@ -94,30 +73,29 @@ export class SessionManagerService {
     });
   }
 
-  async deleteSession(id: string) {
-    const session = await this.prisma.session.delete({
-      where: {
-        id,
-      },
-    });
-
-    if (!session) {
-      throw new Error('session_not_deleted');
-    }
-  }
-
-  async findSession(userId: string) {
-    const sessions = await this.prisma.session.findMany({
-      where: {
-        userId: {
-          equals: userId,
+  async deleteSession(userId: string) {
+    return await this.prisma.$transaction(async ctx => {
+      const user = await ctx.user.findUnique({
+        where: {
+          id: userId,
         },
-      },
+        include: {
+          sessions: true,
+        },
+      });
+
+      if (!user) throw new Error('user_not_found');
+
+      const session = await ctx.session.delete({
+        where: {
+          id: user.sessions[0].id,
+        },
+      });
+
+      if (!session) throw new Error('session_not_deleted');
+
+      return session;
     });
-
-    if (!sessions) throw new Error('session_not_found');
-
-    return sessions;
   }
 
   async findSessionByUser(userId: string, token: string) {

@@ -1,3 +1,4 @@
+import { RoleGuard } from './../auth/guards/role.guard';
 import { Response } from 'express';
 
 import {
@@ -12,6 +13,7 @@ import {
   Get,
   Patch,
   UseGuards,
+  SetMetadata,
 } from '@nestjs/common';
 
 import { ApiTags } from '@nestjs/swagger';
@@ -20,17 +22,18 @@ import { UserService } from './user.service';
 
 import { UpdateUserDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CacheSystemService } from '../cache-system/cache-system.service';
+import { Role, UserRole } from '../auth/role/role.decorator';
+import { Roles } from '@prisma/client';
 
 @ApiTags('user')
 @Controller('user')
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly cache: CacheSystemService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
+  @Role(Roles['OWNER'])
   @UseGuards(JwtAuthGuard)
+
+  //@UseGuards(RoleGuard)
   @Get('all_users')
   async findAllUser() {
     return await this.userService.FindAllUsers();

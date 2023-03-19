@@ -4,10 +4,7 @@ import { Injectable, CACHE_MANAGER, Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 
 type T_KEYS<T> = keyof T;
-/*function excludeProperty<T extends object, K extends keyof T>(obj: T, excludeKey: K) {
-  const { [excludeKey]: _, ...rest } = obj;
-  return rest;
-}*/
+
 interface CacheStateProps<T> {
   model: Uncapitalize<Prisma.ModelName>;
   storeKey: string;
@@ -32,8 +29,6 @@ export class CacheSystemService {
   }
 
   async cacheState<T>({ model, storeKey, exclude }: CacheStateProps<T>): Promise<T[] | null> {
-    // const dataUser = await this.cacheState<User>()
-
     const getOptions = this.options.get(model) ?? {};
 
     const data: T[] = await (this.prisma as any)[model].findMany(getOptions);

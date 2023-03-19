@@ -54,7 +54,11 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Res() res: Response) {
+  async logout(@Res() res: Response, @Req() req: Request) {
+    const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
+
+    await this.authService.deleteUserSession(decoded[0]);
+
     res.clearCookie('auth_token');
     res.clearCookie('refresh_token');
     return res.status(200).json({ message: 'user_logged_out', success: true });
@@ -75,14 +79,4 @@ export class AuthController {
 
     return res.status(200).json({ message: 'token_refreshed', success: true, data: response });
   }
-  /*@Post('/forgot_password')
-  forgotPassword(@Res() res: Response, @Body() email: string, @Req() req: Request) {
-    const tokenFromCookies = req.cookies.auth_token;
-
-    const verifyToken = this.authService._verifyToken(tokenFromCookies);
-
-    const response = this.authService.ForgotPassword(verifyToken.id, email);
-
-    return res.status(200).json(response);
-  }*/
 }
