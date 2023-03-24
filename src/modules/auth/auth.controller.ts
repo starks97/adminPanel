@@ -1,23 +1,22 @@
-import { RefreshTokenGuard } from './guards/refresh-token.guard';
-import { Response, Request } from 'express';
-
-import { ApiTags } from '@nestjs/swagger';
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  Res,
   ForbiddenException,
-  UseGuards,
+  Get,
+  Param,
+  Patch,
+  Post,
   Req,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { ApiTags } from '@nestjs/swagger';
+import { Request, Response } from 'express';
 
-import { LoginUserDto, CreateUserDto } from '../user/dto';
+import { AuthService } from './auth.service';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
+import { CreateUserDto, LoginUserDto } from '../user/dto';
 
 @ApiTags('Authentication')
 @Controller('auth')

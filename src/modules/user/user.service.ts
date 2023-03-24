@@ -1,12 +1,11 @@
-import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
-import { CacheSystemService } from '../cache-system/cache-system.service';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { User } from '@prisma/client';
 
-import { User, Session } from '@prisma/client';
-import { PrismaService } from 'prisma/prisma.service';
-
-import PasswordHasher from 'src/utils/passwordHasher';
 import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
+import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
+import { PasswordHasher } from '../../utils';
+import { CacheSystemService } from '../cache-system/cache-system.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class UserService {

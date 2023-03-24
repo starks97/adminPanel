@@ -19,7 +19,7 @@ model User {
   sessions Session[]
 
   //Roles
-  role Roles @default(PUBLIC)
+  role String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -35,6 +35,24 @@ model Session {
   updatedAt DateTime @default(now()) @updatedAt
   User      User?    @relation(fields: [userId], references: [id])
   userId    String?  @db.ObjectId
+}
+
+model Role {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  name         String        @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+  permissions  Permissions[] @relation(fields: [permissionId], references: [id])
+  permissionId String[]      @db.ObjectId
+}
+
+model Permissions {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  roles     Role[]   @relation(fields: [roleIds], references: [id])
+  roleIds   String[] @db.ObjectId
 }
 
 model Profile {
@@ -76,7 +94,7 @@ model Comment {
 }
 
 enum Roles {
-  OWNER
-  ADMIN
   PUBLIC
+  ADMIN
+  OWNER
 }

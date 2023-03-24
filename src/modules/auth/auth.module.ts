@@ -1,16 +1,14 @@
-import { MailModule } from './../mail/mail.module';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
-import { Module } from '@nestjs/common';
-
+import { MailModule } from './../mail/mail.module';
 import { UserModule } from './../user/user.module';
-
-import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-
+import { AuthService } from './auth.service';
+import { SessionModule } from './session/session.module';
 import { JwtStrategy, LocalStrategy, RefreshTokenStrategy } from './strategies';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
-import { SessionModule } from './session/session.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   controllers: [AuthController],
@@ -24,6 +22,7 @@ import { SessionModule } from './session/session.module';
     CacheSystemModule,
     MailModule,
     SessionModule,
+    PrismaModule,
   ],
 })
 export class AuthModule {}

@@ -1,4 +1,5 @@
 import { createZodDto } from 'nestjs-zod';
+
 import { UserSchema } from './create-user.dto';
 
 export const updateUserPasswordSchema = UserSchema.omit({

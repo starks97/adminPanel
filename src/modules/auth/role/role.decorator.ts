@@ -1,13 +1,13 @@
 import {
-  SetMetadata,
   ExecutionContext,
-  createParamDecorator,
   Get,
   InternalServerErrorException,
+  SetMetadata,
+  createParamDecorator,
 } from '@nestjs/common';
-import { PrismaService } from 'prisma/prisma.service';
-
 import { Roles } from '@prisma/client';
+
+import { PrismaService } from '../../prisma/prisma.service';
 
 export const UserRole = createParamDecorator(async (data: unknown, context: ExecutionContext) => {
   const request = context.switchToHttp().getRequest();

@@ -1,15 +1,11 @@
-import { SessionManagerService } from './session/session.service';
 import { ForbiddenException, Injectable } from '@nestjs/common';
-
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-
-import { JWTPayload } from './interfaces';
+import { JwtService } from '@nestjs/jwt';
 
 import { CreateUserDto, LoginUserDto } from './../user/dto';
-import { RegistrationStatus, LoginStatus } from './interfaces';
-
 import { UserService } from './../user/user.service';
+import { JWTPayload, LoginStatus, RegistrationStatus } from './interfaces';
+import { SessionManagerService } from './session/session.service';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +37,7 @@ export class AuthService {
   async SignIn({ email, password }: LoginUserDto): Promise<LoginStatus> {
     const user = await this.userService.FindByLogin({ email, password });
 
-    const tokens = await this._createTokens({ id: user.id, email: user.email });
+    const tokens = await this._createTokens({ id: user.id, email: user.email, role: user.role });
 
     await this.session.createSessionAndOverride(user.id, tokens.refreshToken);
 
@@ -64,7 +60,11 @@ export class AuthService {
   async refreshToken(userId: string, token: string) {
     const userSession = await this.session.findSessionByUser(userId, token);
 
-    const tokens = await this._createTokens({ id: userSession.id, email: userSession.email });
+    const tokens = await this._createTokens({
+      id: userSession.id,
+      email: userSession.email,
+      role: userSession.role,
+    });
 
     await this.session.updateSession(userSession.id, tokens.refreshToken);
 

@@ -1,6 +1,7 @@
-import { PrismaService } from './../../../../prisma/prisma.service';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Session, User } from '@prisma/client';
+
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class SessionManagerService {

@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
+
 import { IMail } from './interface/mail.interface';
 
 @Injectable()

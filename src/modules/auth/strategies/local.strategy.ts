@@ -1,9 +1,10 @@
-import { LoginUserDto } from './../../user/dto/login-user.dto';
-import { Strategy } from 'passport-local';
-import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { AuthService } from '../auth.service';
+import { PassportStrategy } from '@nestjs/passport';
 import { User } from '@prisma/client';
+import { Strategy } from 'passport-local';
+
+import { LoginUserDto } from './../../user/dto/login-user.dto';
+import { AuthService } from '../auth.service';
 import { LoginStatus } from '../interfaces';
 
 @Injectable()

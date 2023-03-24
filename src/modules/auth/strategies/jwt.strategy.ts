@@ -1,24 +1,21 @@
-import { Reflector } from '@nestjs/core';
-
-import { JWTPayload } from './../interfaces/jwt.interface';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { AuthService } from '../auth.service';
 import {
+  ForbiddenException,
   HttpException,
   HttpStatus,
   Injectable,
-  ExecutionContext,
-  ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Request } from 'express';
-import { PrismaService } from 'prisma/prisma.service';
+import { PassportStrategy } from '@nestjs/passport';
 import { Roles } from '@prisma/client';
+import { Request } from 'express';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+
+import { JWTPayload } from './../interfaces/jwt.interface';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private readonly reflector: Reflector, private readonly prisma: PrismaService) {
+  constructor(private readonly prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         JwtStrategy.extractJWT,
@@ -41,7 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   async validate(payload: JWTPayload) {
     if (!payload) throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
 
-    const user = await this.prisma.user.findUnique({
+    /*const user = await this.prisma.user.findUnique({
       where: { id: payload.id },
       select: { role: true },
     });
@@ -50,7 +47,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     if (user.role === Roles.PUBLIC) {
       throw new InternalServerErrorException('the_user_has_not_authorization');
-    }
+    }*/
 
     return payload;
   }

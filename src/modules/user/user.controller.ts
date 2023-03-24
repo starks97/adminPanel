@@ -1,29 +1,26 @@
-import { RoleGuard } from './../auth/guards/role.guard';
-import { Response } from 'express';
-
 import {
-  Controller,
-  Post,
   Body,
-  Param,
+  Controller,
   Delete,
-  Query,
-  Res,
   ForbiddenException,
   Get,
+  Param,
   Patch,
-  UseGuards,
+  Post,
+  Query,
+  Res,
   SetMetadata,
+  UseGuards,
 } from '@nestjs/common';
-
 import { ApiTags } from '@nestjs/swagger';
+import { Roles } from '@prisma/client';
+import { Response } from 'express';
 
-import { UserService } from './user.service';
-
+import { RoleGuard } from './../auth/guards/role.guard';
 import { UpdateUserDto } from './dto';
+import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Role, UserRole } from '../auth/role/role.decorator';
-import { Roles } from '@prisma/client';
 
 @ApiTags('user')
 @Controller('user')
@@ -32,13 +29,11 @@ export class UserController {
 
   @Role(Roles['OWNER'])
   @UseGuards(JwtAuthGuard)
-
-  //@UseGuards(RoleGuard)
   @Get('all_users')
   async findAllUser() {
     return await this.userService.FindAllUsers();
   }
-
+  @Role(Roles['ADMIN'])
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDataUser: UpdateUserDto, @Res() res: Response) {

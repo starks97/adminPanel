@@ -1,7 +1,8 @@
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from 'prisma/prisma.service';
-import { Injectable, CACHE_MANAGER, Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+
+import { PrismaService } from '../prisma/prisma.service';
 
 type T_KEYS<T> = keyof T;
 

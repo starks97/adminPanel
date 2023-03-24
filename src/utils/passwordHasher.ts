@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcryptjs';
 
-export default class PasswordHasher {
+export class PasswordHasher {
   static setHashPassword(password: string) {
     const salt = bcrypt.genSaltSync(10);
     return bcrypt.hashSync(password, salt);
