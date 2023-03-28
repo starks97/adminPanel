@@ -5,9 +5,8 @@ import {
   SetMetadata,
   createParamDecorator,
 } from '@nestjs/common';
-import { Roles } from '@prisma/client';
 
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../../prisma/prisma.service';
 
 export const UserRole = createParamDecorator(async (data: unknown, context: ExecutionContext) => {
   const request = context.switchToHttp().getRequest();
@@ -19,7 +18,7 @@ export const UserRole = createParamDecorator(async (data: unknown, context: Exec
     select: { role: true },
   });
 
-  if (user.role === Roles.PUBLIC) {
+  if (user.role === 'PUBLIC') {
     throw new InternalServerErrorException('the_user_has_not_authorization');
   }
 
@@ -27,4 +26,4 @@ export const UserRole = createParamDecorator(async (data: unknown, context: Exec
   return true;
 });
 
-export const Role = (roles: Roles) => SetMetadata('roles', roles);
+export const Role = (role: string) => SetMetadata('roles', role);

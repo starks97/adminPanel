@@ -6,12 +6,11 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Roles } from '@prisma/client';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { JWTPayload } from './../interfaces/jwt.interface';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../../prisma/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {

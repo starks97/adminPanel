@@ -3,10 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles, User } from '@prisma/client';
 
 import { JWTPayload } from './../interfaces/jwt.interface';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../../prisma/prisma.service';
 import { Role } from '../role/role.decorator';
 
 @Injectable()
@@ -16,7 +15,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   async canActivate(ctx: ExecutionContext) {
-    const requiredRole = this.reflector.getAllAndOverride<Roles>('roles', [
+    const requiredRole = this.reflector.getAllAndOverride<string>('roles', [
       ctx.getClass(),
       ctx.getHandler(),
     ]);
@@ -31,7 +30,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     if (!result) return false;
 
-    if (Roles[user.role] <= requiredRole) return false;
+    //if (Roles[user.role] <= requiredRole) return false;
 
     return result;
   }

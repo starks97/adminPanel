@@ -2,7 +2,7 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Cache } from 'cache-manager';
 
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 type T_KEYS<T> = keyof T;
 
@@ -22,10 +22,11 @@ export class CacheSystemService {
   ) {}
 
   async get(key: string): Promise<any> {
-    return await this.cacheManager.get(key);
+    return await this.cacheManager?.get(key);
   }
 
   async set(key: string, value: any, ttl: number) {
+    if (value === undefined) return;
     return await this.cacheManager.set(key, value, ttl);
   }
 
@@ -35,7 +36,7 @@ export class CacheSystemService {
     const data: T[] = await (this.prisma as any)[model].findMany(getOptions);
 
     if (exclude) {
-      data.forEach(data => {
+      data?.forEach(data => {
         exclude.forEach(key => {
           delete data[key];
         });

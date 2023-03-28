@@ -2,7 +2,7 @@ import { CACHE_MANAGER, CacheModule, Module } from '@nestjs/common';
 import * as redisStore from 'cache-manager-redis-store';
 
 import { CacheSystemService } from './cache-system.service';
-import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaModule } from '../../../prisma/prisma.module';
 
 @Module({
   imports: [

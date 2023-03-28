@@ -4,7 +4,7 @@ import { CacheSystemModule } from './../cache-system/cache-system.module';
 import { UserController } from './user.controller';
 import { UserModule } from './user.module';
 import { UserService } from './user.service';
-import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaModule } from '../../../prisma/prisma.module';
 
 describe('UserController', () => {
   let controller: UserController;

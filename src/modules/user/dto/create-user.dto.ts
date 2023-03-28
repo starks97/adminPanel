@@ -18,7 +18,7 @@ export const UserSchema = z.object({
     })
     .nonempty(),
   confirmPassword: z.string().min(4).optional(),
-  role: z.enum(['ADMIN', 'PUBLIC', 'OWNER']),
+  role: z.string().min(3, { message: 'role is too short' }),
 });
 /*.superRefine(({ confirmPassword, password }, ctx) => {
     if (confirmPassword !== password) {

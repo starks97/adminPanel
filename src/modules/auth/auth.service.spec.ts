@@ -5,7 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserModule } from './../user/user.module';
 import { AuthService } from './auth.service';
 import { SessionModule } from './session/session.module';
-import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaModule } from '../../../prisma/prisma.module';
 
 describe('AuthService', () => {
   let service: AuthService;

@@ -5,7 +5,7 @@ import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
 import { PasswordHasher } from '../../utils';
 import { CacheSystemService } from '../cache-system/cache-system.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class UserService {
@@ -25,12 +25,11 @@ export class UserService {
       where: { email },
     });
 
-    const hashedPassword = PasswordHasher.setHashPassword(password);
-
     if (userInDb) {
       throw new HttpException('user_already_exist', HttpStatus.CONFLICT);
     }
 
+    const hashedPassword = PasswordHasher.setHashPassword(password);
     const user = await this.prisma.user.create({
       data: {
         email,
@@ -197,7 +196,7 @@ export class UserService {
     const newUserPassword = await this.prisma.user.update({
       where: { id },
       data: {
-        password: pass ? PasswordHasher.setHashPassword(pass.password) : undefined,
+        password: pass ? PasswordHasher.setHashPassword(pass?.password as string) : undefined,
         updatedAt: new Date(),
       },
       include: {

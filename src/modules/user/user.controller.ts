@@ -13,7 +13,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Roles } from '@prisma/client';
 import { Response } from 'express';
 
 import { RoleGuard } from './../auth/guards/role.guard';
@@ -27,13 +26,13 @@ import { Role, UserRole } from '../auth/role/role.decorator';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Role(Roles['OWNER'])
+  @Role('OWNER')
   @UseGuards(JwtAuthGuard)
   @Get('all_users')
   async findAllUser() {
     return await this.userService.FindAllUsers();
   }
-  @Role(Roles['ADMIN'])
+  @Role('OWNER')
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDataUser: UpdateUserDto, @Res() res: Response) {
