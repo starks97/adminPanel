@@ -71,6 +71,7 @@
     "nestjs-zod": "^1.2.1",
     "prettier": "^2.3.2",
     "prisma": "^4.10.1",
+    "redis-mock": "^0.56.3",
     "source-map-support": "^0.5.20",
     "supertest": "^6.1.3",
     "ts-jest": "29.0.3",

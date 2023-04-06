@@ -1,7 +1,11 @@
+import { CacheModule } from '@nestjs/common';
 import { CacheSystemService } from './../cache-system/cache-system.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
+import * as redisMock from 'redis-mock';
+
+import * as redisStore from 'cache-manager-redis-store';
 
 import { CacheSystemModule } from './../cache-system/cache-system.module';
 import { UserModule } from './user.module';
@@ -23,7 +27,16 @@ describe('UserService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [PrismaModule, CacheSystemModule, UserModule],
+      imports: [
+        PrismaModule,
+        CacheSystemModule,
+        UserModule,
+        CacheModule.register({
+          store: redisStore,
+          host: 'localhost',
+          port: 6379,
+        }),
+      ],
       providers: [UserService, PrismaService, CacheSystemService],
     })
       .overrideProvider(PrismaService)
@@ -181,7 +194,7 @@ describe('UserService', () => {
       expect(service.FindUserById('123445')).rejects.toThrowError('user_not_found');
     });
 
-    it('should check if the user is in the cache', async () => {
+    it('should check if the user is in cache', async () => {
       const userInCache = {
         id: '1234',
         email: '',
@@ -192,9 +205,35 @@ describe('UserService', () => {
         updatedAt: new Date(),
       };
 
-      cacheService.get.mockResolvedValue(userInCache);
+      await cacheService.set('1234', userInCache, 60);
 
-      expect(service.FindUserById('1234')).resolves.toEqual(userInCache);
+      expect(await cacheService.get('1234')).toBe(userInCache);
+    });
+  });
+
+  describe('find user by email or name', () => {
+    it('should find a user by email or name', async () => {
+      const hashedPassword = PasswordHasher.setHashPassword('1234');
+      const mockedUser = {
+        id: '1234',
+        email: 'david@david.com',
+        name: 'david',
+        password: hashedPassword,
+        role: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaMock.user.findFirst.mockResolvedValue(mockedUser);
+
+      const result = await service.FindUserByEmailorName('david');
+
+      expect(result).toBe(mockedUser);
+    });
+    it('should check if the user does not exist', async () => {
+      prismaMock.user.findFirst.mockResolvedValue(null);
+
+      expect(service.FindUserByEmailorName('hello')).rejects.toThrowError('user_not_found');
     });
   });
 });

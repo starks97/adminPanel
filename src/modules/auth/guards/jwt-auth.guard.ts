@@ -26,7 +26,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const result = (await super.canActivate(ctx)) as boolean;
     const request = ctx.switchToHttp().getRequest();
     const user: JWTPayload = request.user;
-    console.log({ user });
 
     if (!result) return false;
 

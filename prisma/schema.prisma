@@ -19,7 +19,7 @@ model User {
   sessions Session[]
 
   //Roles
-  role String
+  role String @default("PUBLIC")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

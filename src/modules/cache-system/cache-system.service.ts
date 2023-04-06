@@ -22,11 +22,15 @@ export class CacheSystemService {
   ) {}
 
   async get(key: string): Promise<any> {
-    return await this.cacheManager?.get(key);
+    if (!this.cacheManager) return;
+    if (!key || typeof key === undefined) throw new Error('Key is required');
+    return await this.cacheManager.get(key);
   }
 
   async set(key: string, value: any, ttl: number) {
-    if (value === undefined) return;
+    if (!value) throw new Error('Value is required');
+    if (!key || typeof key === undefined) throw new Error('Key is required');
+
     return await this.cacheManager.set(key, value, ttl);
   }
 
@@ -34,6 +38,8 @@ export class CacheSystemService {
     const getOptions = this.options.get(model) ?? {};
 
     const data: T[] = await (this.prisma as any)[model].findMany(getOptions);
+
+    if (!data) return null;
 
     if (exclude) {
       data?.forEach(data => {
