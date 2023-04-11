@@ -49,13 +49,9 @@ describe('cacheSystem', () => {
     });
 
     it('should return error if key does not exist in cache', async () => {
-      const key = 'test-key';
+      const key = '';
 
-      try {
-        await service.get(key);
-      } catch (e) {
-        expect(e.message).toEqual('Key not found in cache');
-      }
+      expect(service.get(key)).rejects.toThrowError('Key is required');
     });
   });
 

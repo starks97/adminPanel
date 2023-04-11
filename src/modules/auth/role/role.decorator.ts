@@ -18,11 +18,11 @@ export const UserRole = createParamDecorator(async (data: unknown, context: Exec
     select: { role: true },
   });
 
-  if (user.role === 'PUBLIC') {
+  /*if (user.role === 'PUBLIC') {
     throw new InternalServerErrorException('the_user_has_not_authorization');
   }
 
-  request.metadata = { role: user.role };
+  request.metadata = { role: user.role };*/
   return true;
 });
 

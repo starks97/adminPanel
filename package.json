@@ -21,6 +21,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed/seed.ts"
+  },
   "dependencies": {
     "@casl/ability": "^6.3.3",
     "@nestjs-modules/mailer": "^1.8.1",
@@ -30,8 +33,8 @@
     "@nestjs/jwt": "^10.0.2",
     "@nestjs/passport": "^9.0.3",
     "@nestjs/platform-express": "^9.0.0",
-    "@nestjs/swagger": "^6.2.1",
-    "@prisma/client": "^4.10.1",
+    "@nestjs/swagger": "^6.3.0",
+    "@prisma/client": "^4.12.0",
     "bcryptjs": "^2.4.3",
     "cache-manager": "^4.0.0",
     "cache-manager-redis-store": "^2.0.0",
@@ -70,7 +73,7 @@
     "jest-mock-extended": "^3.0.4",
     "nestjs-zod": "^1.2.1",
     "prettier": "^2.3.2",
-    "prisma": "^4.10.1",
+    "prisma": "^4.12.0",
     "redis-mock": "^0.56.3",
     "source-map-support": "^0.5.20",
     "supertest": "^6.1.3",

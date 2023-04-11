@@ -12,20 +12,24 @@ datasource db {
 }
 
 model User {
-  id       String    @id @default(auto()) @map("_id") @db.ObjectId
-  email    String    @unique
-  password String
-  name     String
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String    @unique
+  password  String
+  name      String
+  lastName  String?
+  bio       String?
+  image     String?
+  birthday  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+
+  //RELATIONS
   sessions Session[]
 
-  //Roles
-  role Role?
+  role     Role   @relation(fields: [roleName], references: [name])
+  roleName String @default("PUBLIC")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  //RELATIONS
-  profile   Profile?
-  post      Post[]
+  post Post[]
 }
 
 model Session {
@@ -38,37 +42,14 @@ model Session {
 }
 
 model Role {
-  id           String        @id @default(auto()) @map("_id") @db.ObjectId
-  name         String        @unique @default("PUBLIC")
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now()) @updatedAt
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  name        String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+  permissions Permissions[]
   //relations
-  permissions  Permissions[] @relation(fields: [permissionId], references: [id])
-  permissionId String[]      @db.ObjectId
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String @unique @db.ObjectId
-}
-
-model Permissions {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  names     String[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  roles     Role[]   @relation(fields: [roleIds], references: [id])
-  roleIds   String[] @db.ObjectId
-}
-
-model Profile {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  bio       String
-  image     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  //RELATIONS
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String   @unique @db.ObjectId
+  user User[]
 }
 
 model Post {
@@ -76,6 +57,7 @@ model Post {
   title       String
   description String    @unique
   content     String
+  published   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
   deletedAt   DateTime?
@@ -97,8 +79,9 @@ model Comment {
   postId String @unique @db.ObjectId
 }
 
-enum Roles {
-  PUBLIC
-  ADMIN
-  OWNER
+enum Permissions {
+  CREATE
+  READ
+  UPDATE
+  DELETE
 }

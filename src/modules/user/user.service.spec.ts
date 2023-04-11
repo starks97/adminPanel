@@ -61,8 +61,8 @@ describe('UserService', () => {
         id: '1234',
         email: 'diablos@diablos.com',
         name: 'diablos',
+        roleName: 'PUBLIC',
         password: hashedPassword,
-        role: 'OWNER',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -70,7 +70,6 @@ describe('UserService', () => {
         email: 'diablos@diablos.com',
         name: 'diablos',
         password: '1234',
-        role: 'OWNER',
       };
 
       prismaMock.user.create.mockResolvedValue(mockedUser);
@@ -86,8 +85,8 @@ describe('UserService', () => {
         id: '1234',
         email: 'diablos@diablos.com',
         name: 'diablos',
+        roleName: 'PUBLIC',
         password: hashedPassword,
-        role: 'OWNER',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -96,7 +95,6 @@ describe('UserService', () => {
         email: 'diablos@diablos.com',
         name: 'diablos',
         password: '1234',
-        role: 'OWNER',
       };
 
       prismaMock.user.findFirst.mockResolvedValue(mockedUser);
@@ -113,7 +111,7 @@ describe('UserService', () => {
         email: 'escanor@escanor.com',
         name: 'escanor',
         password: hashedPassword,
-        role: 'PUBLIC',
+        roleName: 'PUBLIC',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -148,7 +146,7 @@ describe('UserService', () => {
         email: 'escanor@escanor.com',
         name: '',
         password: hashedPassword,
-        role: '',
+        roleName: '',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -172,7 +170,7 @@ describe('UserService', () => {
         email: '',
         name: '',
         password: hashedPassword,
-        role: '',
+        roleName: '',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -200,7 +198,7 @@ describe('UserService', () => {
         email: '',
         name: '',
         password: '',
-        role: '',
+        roleName: '',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -219,7 +217,7 @@ describe('UserService', () => {
         email: 'david@david.com',
         name: 'david',
         password: hashedPassword,
-        role: '',
+        roleName: '',
         createdAt: new Date(),
         updatedAt: new Date(),
       };

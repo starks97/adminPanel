@@ -6,7 +6,6 @@ export const updateUserPasswordSchema = UserSchema.omit({
   confirmPassword: true,
   email: true,
   name: true,
-  role: true,
   refreshToken: true,
 }).partial();
 

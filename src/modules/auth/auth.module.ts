@@ -9,6 +9,7 @@ import { SessionModule } from './session/session.module';
 import { JwtStrategy, LocalStrategy, RefreshTokenStrategy } from './strategies';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
 import { PrismaModule } from '../../../prisma/prisma.module';
+import { RoleSystemModule } from './role-system/role-system.module';
 
 @Module({
   controllers: [AuthController],
@@ -23,6 +24,7 @@ import { PrismaModule } from '../../../prisma/prisma.module';
     MailModule,
     SessionModule,
     PrismaModule,
+    RoleSystemModule,
   ],
 })
 export class AuthModule {}

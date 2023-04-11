@@ -1,24 +1,28 @@
+import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 
 import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
-import { PasswordHasher } from '../../utils';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService, private readonly cache: CacheSystemService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheSystemService,
+    private readonly passwordHasher: PassHasherService,
+  ) {
     this.cache._configModel('user', {
       include: {
         sessions: true,
+        role: true,
       },
     });
   }
 
   async createUser(createUser: CreateUserDto): Promise<User | null> {
-    const { email, name, password, role } = createUser;
+    const { email, name, password } = createUser;
 
     // // check if the user exists in the db
     const userInDb = await this.prisma.user.findFirst({
@@ -29,16 +33,26 @@ export class UserService {
       throw new HttpException('user_already_exist', HttpStatus.CONFLICT);
     }
 
-    const hashedPassword = PasswordHasher.setHashPassword(password);
+    const hashedPassword = await this.passwordHasher.hashPassword(password);
     const user = await this.prisma.user.create({
       data: {
         email,
         name,
         password: hashedPassword,
-        role,
+        role: {
+          connectOrCreate: {
+            where: {
+              name: 'PUBLIC',
+            },
+            create: {
+              name: 'PUBLIC',
+            },
+          },
+        },
       },
       include: {
         sessions: true,
+        role: true,
       },
     });
 
@@ -55,6 +69,7 @@ export class UserService {
       where: { email },
       include: {
         sessions: true,
+        role: true,
       },
     });
 
@@ -62,7 +77,7 @@ export class UserService {
       throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
     }
 
-    const isVerifiedPassword = PasswordHasher.compareHashPassword(password, user.password);
+    const isVerifiedPassword = await this.passwordHasher.comparePassword(password, user.password);
 
     if (!isVerifiedPassword) {
       throw new HttpException('password_not_match', HttpStatus.NOT_FOUND);
@@ -82,6 +97,7 @@ export class UserService {
       where: { id },
       include: {
         sessions: true,
+        role: true,
       },
     });
 
@@ -139,10 +155,10 @@ export class UserService {
         id: true,
         email: true,
         name: true,
-        role: true,
         createdAt: true,
         updatedAt: true,
         sessions: true,
+        role: true,
       },
       skip: 0,
       take: 10,
@@ -157,7 +173,7 @@ export class UserService {
     return users || [];
   }
 
-  async UpdateDataUser(id: string, data: UpdateUserDto): Promise<User | null> {
+  /*async UpdateDataUser(id: string, data: UpdateUserDto): Promise<User | null> {
     const { name, role } = data;
 
     const newDataUser = await this.prisma.user.update({
@@ -179,9 +195,9 @@ export class UserService {
     });
 
     return newDataUser;
-  }
+  }*/
 
-  async DeleteUser(id: string): Promise<User | null> {
+  async DeleteUser(id: string) {
     this.FindUserById(id);
     const deletedUser = await this.prisma.user.delete({
       where: { id },
@@ -196,7 +212,9 @@ export class UserService {
     const newUserPassword = await this.prisma.user.update({
       where: { id },
       data: {
-        password: pass ? PasswordHasher.setHashPassword(pass?.password as string) : undefined,
+        password: pass
+          ? await this.passwordHasher.hashPassword(pass?.password as string)
+          : undefined,
         updatedAt: new Date(),
       },
       include: {

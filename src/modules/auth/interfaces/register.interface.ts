@@ -1,7 +1,7 @@
-import { User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 
 export interface RegistrationStatus {
   success: boolean;
   message: string;
-  data?: User;
+  data?: Omit<User, 'lastName' | 'bio' | 'image' | 'birthday' | 'password'>;
 }

@@ -26,10 +26,11 @@ export class AuthService {
       });
     }
 
+    const { password, lastName, bio, image, birthday, ...rest } = user;
+
     return {
       message: 'user_created',
-      data: user,
-
+      data: rest,
       success: true,
     };
   }
@@ -37,7 +38,7 @@ export class AuthService {
   async SignIn({ email, password }: LoginUserDto): Promise<LoginStatus> {
     const user = await this.userService.FindByLogin({ email, password });
 
-    const tokens = await this._createTokens({ id: user.id, email: user.email, role: user.role });
+    const tokens = await this._createTokens({ id: user.id, email: user.email });
 
     await this.session.createSessionAndOverride(user.id, tokens.refreshToken);
 
@@ -63,7 +64,7 @@ export class AuthService {
     const tokens = await this._createTokens({
       id: userSession.id,
       email: userSession.email,
-      role: userSession.role,
+      /*role: userSession.role,*/
     });
 
     await this.session.updateSession(userSession.id, tokens.refreshToken);

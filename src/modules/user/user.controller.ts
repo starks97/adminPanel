@@ -32,7 +32,7 @@ export class UserController {
   async findAllUser() {
     return await this.userService.FindAllUsers();
   }
-  @Role('OWNER')
+  /*@Role('OWNER')
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDataUser: UpdateUserDto, @Res() res: Response) {
@@ -41,7 +41,7 @@ export class UserController {
     if (!response) throw new ForbiddenException('user_not_updated');
 
     return res.status(200).json({ message: 'user_updated' });
-  }
+  }*/
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
