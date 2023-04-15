@@ -26,7 +26,7 @@ import { Role, UserRole } from '../auth/role/role.decorator';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Role('OWNER')
+  //@Role('OWNER')
   @UseGuards(JwtAuthGuard)
   @Get('all_users')
   async findAllUser() {
@@ -50,12 +50,16 @@ export class UserController {
   }
 
   @Get()
-  searchUser(@Query('search_user_by') query: string) {
-    return this.userService.FindUserByEmailorName(query);
+  searchUser(@Query('search_user_by') query: string, @Res() res: Response) {
+    const response = this.userService.FindUserByEmailorName(query);
+
+    if (!response) throw new ForbiddenException('user_not_found');
+
+    return res.status(200).json(response);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Res() res: Response) {
+  removeUser(@Param('id') id: string, @Res() res: Response) {
     const response = this.userService.DeleteUser(id);
 
     if (!response) throw new ForbiddenException('user_not_deleted');
