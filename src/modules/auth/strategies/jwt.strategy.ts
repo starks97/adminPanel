@@ -31,17 +31,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   async validate(payload: JWTPayload) {
     if (!payload) throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
 
-    /*const user = await this.prisma.user.findUnique({
-      where: { id: payload.id },
-      select: { role: true },
-    });
-
-    if (!user) throw new ForbiddenException('user_not_found');
-
-    if (user.role === Roles.PUBLIC) {
-      throw new InternalServerErrorException('the_user_has_not_authorization');
-    }*/
-
     return payload;
   }
 }

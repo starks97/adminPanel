@@ -93,22 +93,28 @@ export class UserService {
       return dataCache;
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: {
-        sessions: true,
-        role: true,
-      },
-    });
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        include: {
+          sessions: true,
+          role: true,
+        },
+      });
 
-    if (!user) {
+      if (!user) {
+        throw new Error(`User with id ${id} not found`);
+      }
+
+      delete user.password;
+
+      await this.cache.set('user:' + id, user, 60);
+
+      return user as User;
+    } catch (error) {
+      console.error(`Error finding user with id ${id}:`, error);
       throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
     }
-    delete user.password;
-
-    await this.cache.set('user:' + id, user, 60);
-
-    return user as User;
   }
 
   async FindUserByEmailorName(q: string) {
@@ -203,6 +209,8 @@ export class UserService {
       where: { id },
     });
 
+    if (!deletedUser) throw new HttpException('user_not_deleted', HttpStatus.NOT_FOUND);
+
     await this.cache.cacheState<User>({ model: 'user', storeKey: 'all_users' });
 
     return deletedUser;
@@ -221,6 +229,8 @@ export class UserService {
         sessions: true,
       },
     });
+
+    if (!newUserPassword) throw new HttpException('user_not_updated', HttpStatus.NOT_FOUND);
 
     await this.cache.cacheState<User>({
       model: 'user',

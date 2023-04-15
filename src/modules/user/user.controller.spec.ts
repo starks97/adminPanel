@@ -1,3 +1,4 @@
+import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { CacheSystemModule } from './../cache-system/cache-system.module';
@@ -13,7 +14,7 @@ describe('UserController', () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [UserModule, PrismaModule, CacheSystemModule],
       controllers: [UserController],
-      providers: [UserService],
+      providers: [UserService, PassHasherService],
     }).compile();
 
     controller = module.get<UserController>(UserController);

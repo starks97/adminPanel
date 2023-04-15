@@ -28,8 +28,9 @@ export class CacheSystemService {
   }
 
   async set(key: string, value: any, ttl: number) {
-    if (!value) throw new Error('Value is required');
     if (!key) throw new Error('Key is required');
+
+    if (!ttl) throw new Error('TTL is required');
 
     return await this.cacheManager.set(key, value, ttl);
   }
