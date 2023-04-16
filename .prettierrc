@@ -4,6 +4,5 @@
   "semi": true,
   "printWidth": 100,
   "tabWidth": 2,
-  "arrowParens": "avoid",
-  "plugins": ["prettier-plugin-jsdoc"]
+  "arrowParens": "avoid"
 }
