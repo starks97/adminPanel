@@ -22,47 +22,55 @@ export class UserService {
   }
 
   async createUser(createUser: CreateUserDto): Promise<User | null> {
-    const { email, name, password } = createUser;
+    try {
+      const { email, name, password } = createUser;
 
-    // // check if the user exists in the db
-    const userInDb = await this.prisma.user.findFirst({
-      where: { email },
-    });
+      // // check if the user exists in the db
+      const userInDb = await this.prisma.user.findFirst({
+        where: { email },
+      });
 
-    if (userInDb) {
-      throw new HttpException('user_already_exist', HttpStatus.CONFLICT);
-    }
+      if (userInDb) {
+        throw new HttpException('user_already_exist', HttpStatus.CONFLICT);
+      }
 
-    const hashedPassword = await this.passwordHasher.hashPassword(password);
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-        role: {
-          connectOrCreate: {
-            where: {
-              name: 'PUBLIC',
-            },
-            create: {
-              name: 'PUBLIC',
+      const hashedPassword = await this.passwordHasher.hashPassword(password);
+      const user = await this.prisma.user.create({
+        data: {
+          email,
+          name,
+          password: hashedPassword,
+          role: {
+            connectOrCreate: {
+              where: {
+                name: 'PUBLIC',
+              },
+              create: {
+                name: 'PUBLIC',
+              },
             },
           },
         },
-      },
-      include: {
-        sessions: true,
-        role: true,
-      },
-    });
+        include: {
+          sessions: true,
+          role: true,
+        },
+      });
 
-    await this.cache.cacheState<User>({
-      model: 'user',
-      storeKey: 'all_users',
-      exclude: ['password'],
-    });
+      await this.cache.cacheState<User>({
+        model: 'user',
+        storeKey: 'all_users',
+        exclude: ['password'],
+      });
 
-    return user;
+      return user;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        throw new HttpException('user_not_created', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+    }
   }
   async FindByLogin({ email, password }: LoginUserDto): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
