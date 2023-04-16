@@ -1,12 +1,12 @@
-import { PassHasherService } from './pass-hasher/pass-hasher.service';
+import { ForbiddenException, Session } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { CacheSystemModule } from './../cache-system/cache-system.module';
+import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { UserController } from './user.controller';
 import { UserModule } from './user.module';
 import { UserService } from './user.service';
 import { PrismaModule } from '../../../prisma/prisma.module';
-import { ForbiddenException, Session } from '@nestjs/common';
 
 describe('UserController', () => {
   let controller: UserController;

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PassHasherService } from './pass-hasher.service';
 import * as bcrypt from 'bcryptjs';
+
+import { PassHasherService } from './pass-hasher.service';
 
 describe('PassHasherService', () => {
   let service: PassHasherService;

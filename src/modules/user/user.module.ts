@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 
+import { PassHasherModule } from './pass-hasher/pass-hasher.module';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { CacheSystemModule } from '../cache-system/cache-system.module';
 import { PrismaModule } from '../../../prisma/prisma.module';
-import { PassHasherModule } from './pass-hasher/pass-hasher.module';
+import { CacheSystemModule } from '../cache-system/cache-system.module';
 
 @Module({
   controllers: [UserController],

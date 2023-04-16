@@ -1,40 +1,29 @@
-import { PassHasherModule } from './../user/pass-hasher/pass-hasher.module';
-import { CacheSystemModule } from './../cache-system/cache-system.module';
-import { PassHasherService } from './../user/pass-hasher/pass-hasher.service';
-import { CacheSystemService } from '../cache-system/cache-system.service';
+import { ForbiddenException } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as redisStore from 'cache-manager-redis-store';
-import * as redisMock from 'redis-mock';
-
-import { UserModule } from './../user/user.module';
-import { AuthService } from './auth.service';
-import { SessionModule } from './session/session.module';
-import { PrismaModule } from '../../../prisma/prisma.module';
-import { UserService } from '../user/user.service';
-import {
-  CACHE_MANAGER,
-  CacheModule,
-  ForbiddenException,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
-import { SessionManagerService } from './session/session.service';
-import { CreateUserDto, LoginUserDto } from '../user/dto';
 import { PrismaClient } from '@prisma/client';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import { PrismaService } from '../../../prisma/prisma.service';
 
-import { RegistrationStatus, LoginStatus } from './interfaces';
+import { CacheSystemModule } from './../cache-system/cache-system.module';
+import { PassHasherModule } from './../user/pass-hasher/pass-hasher.module';
+import { PassHasherService } from './../user/pass-hasher/pass-hasher.service';
+import { UserModule } from './../user/user.module';
+import { AuthService } from './auth.service';
+import { LoginStatus, RegistrationStatus } from './interfaces';
+import { SessionModule } from './session/session.module';
+import { CacheSystemService } from '../cache-system/cache-system.service';
+
+import { PrismaModule } from '../../../prisma/prisma.module';
+import { CreateUserDto, LoginUserDto } from '../user/dto';
+import { UserService } from '../user/user.service';
+import { SessionManagerService } from './session/session.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let userService: UserService;
   let prismaMock: DeepMockProxy<{ [K in keyof PrismaClient]: Omit<PrismaClient[K], 'groupBy'> }>;
   let jwtService: JwtService;
-  let configService: ConfigService;
-  let sessionManagerService: SessionManagerService;
 
   const createUserDto: CreateUserDto = {
     name: 'John',
@@ -111,9 +100,6 @@ describe('AuthService', () => {
         SessionModule,
         CacheSystemModule,
         PassHasherModule,
-        CacheModule.register({
-          store: redisStore,
-        }),
       ],
       providers: [
         AuthService,
@@ -122,18 +108,7 @@ describe('AuthService', () => {
         PrismaService,
         CacheSystemService,
         PassHasherService,
-        {
-          provide: CACHE_MANAGER,
-          useValue: {
-            store: redisStore,
-            host: 'localhost',
-            port: 6379,
-            ttl: 180,
-            create: () => {
-              return redisMock.createClient();
-            },
-          },
-        },
+
         SessionManagerService,
       ],
     })
@@ -145,11 +120,8 @@ describe('AuthService', () => {
       .compile();
 
     service = module.get<AuthService>(AuthService);
-    userService = module.get<UserService>(UserService);
     jwtService = module.get<JwtService>(JwtService);
 
-    configService = module.get<ConfigService>(ConfigService);
-    sessionManagerService = module.get<SessionManagerService>(SessionManagerService);
     prismaMock =
       module.get<DeepMockProxy<{ [K in keyof PrismaClient]: Omit<PrismaClient[K], 'groupBy'> }>>(
         PrismaService,

@@ -7,8 +7,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { CacheSystemModule } from './modules/cache-system/cache-system.module';
 import { MailModule } from './modules/mail/mail.module';
-import { PrismaModule } from '../prisma/prisma.module';
 import { UserModule } from './modules/user/user.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [

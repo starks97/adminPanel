@@ -35,6 +35,26 @@ export class CacheSystemService {
     return await this.cacheManager.set(key, value, ttl);
   }
 
+  /**
+   * This method is used to cache the state of a model of prisma and return the data and also
+   * exclude the data that is not needed to be cached
+   *
+   * @example
+   *   ```typescript
+   *   const data = await this.cacheSystemService.cacheState({
+   *     model: 'user',
+   *     storeKey: 'users',
+   *     exclude: ['password', 'email', 'roleName']
+   *   })
+   *   ```;
+   *
+   * @note the exclude property is optional
+   *
+   * # Welcome to StackEdit!
+   *
+   * Hi! I'm your first Markdown file in **StackEdit**. If you want to learn about StackEdit, you can read me. If you want to play with Markdown, you can edit me. Once you have finished with me, you can create new files by opening the **file explorer** on the left corner of the navigation bar.
+   */
+
   async cacheState<T>({ model, storeKey, exclude }: CacheStateProps<T>): Promise<T[] | null> {
     const getOptions = this.options.get(model) ?? {};
 

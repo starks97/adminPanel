@@ -7,8 +7,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { SessionModule } from './session/session.module';
 import { JwtStrategy, LocalStrategy, RefreshTokenStrategy } from './strategies';
-import { CacheSystemModule } from '../cache-system/cache-system.module';
 import { PrismaModule } from '../../../prisma/prisma.module';
+import { CacheSystemModule } from '../cache-system/cache-system.module';
 
 @Module({
   controllers: [AuthController],

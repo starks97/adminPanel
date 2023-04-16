@@ -1,15 +1,15 @@
-import { CacheModule, CACHE_MANAGER } from '@nestjs/common';
+import { CACHE_MANAGER, CacheModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { PrismaClient } from '@prisma/client';
+import { Cache } from 'cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
+import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import * as redisMock from 'redis-mock';
 
 import { CacheSystemModule } from './cache-system.module';
 import { CacheSystemService } from './cache-system.service';
 import { PrismaModule } from '../../../prisma/prisma.module';
-import { Cache } from 'cache-manager';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import { PrismaClient } from '@prisma/client';
 
 describe('cacheSystem', () => {
   let service: CacheSystemService;
@@ -70,7 +70,7 @@ describe('cacheSystem', () => {
       const key = 'test-key';
       const value = 'test-value';
 
-      const ttl: undefined = undefined;
+      const ttl = undefined;
 
       expect(service.set(key, value, ttl)).rejects.toThrowError('TTL is required');
     });

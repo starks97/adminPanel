@@ -1,11 +1,11 @@
-import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 
 import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
-import { CacheSystemService } from '../cache-system/cache-system.service';
+import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { CacheSystemService } from '../cache-system/cache-system.service';
 @Injectable()
 export class UserService {
   constructor(

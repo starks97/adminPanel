@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
+import fs from 'fs';
+
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -136,7 +138,7 @@ async function main() {
     },
   });
 
-  console.log({
+  const data = JSON.stringify({
     OWNER_role,
     ADMIN_role,
     PUBLIC_role,
@@ -147,6 +149,8 @@ async function main() {
     post1,
     post2,
   });
+
+  fs.writeFileSync('./seed.json', data);
 }
 console.log('Seeding...');
 
