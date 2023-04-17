@@ -50,6 +50,16 @@ import { PrismaService } from '../../../../prisma/prisma.service';
  * ### session_not_found
  *
  * This exception is thrown when the session is not found.
+ *
+ * ## Links
+ *
+ * @module SessionManager
+ * @version 1.0.0
+ * @category SessionManager
+ * @see {@link createSessionAndOverride}
+ * @see {@link updateSession}
+ * @see {@link deleteSession}
+ * @see {@link findSessionByUser}
  */
 
 @Injectable()

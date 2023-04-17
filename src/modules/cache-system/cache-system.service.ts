@@ -36,7 +36,25 @@ interface CacheStateProps<T> {
  * import { Cache } from 'cache-manager';
  * ```
  *
- * -
+ * ## Notes
+ *
+ * - The **Cache** interface is used to define the structure of the data returned by the **Get** and
+ *   **Set** methods.
+ * - The **CacheManager** class is used to cache data in a store.
+ * - The **Injectable** decorator is used to mark a class as a dependency injection token.
+ * - The **Inject** decorator is used to inject a dependency into a class.
+ * - The **CACHE_MANAGER** token is used to inject the **CacheManager** class.
+ *
+ * ## Links
+ *
+ * @module CacheSystem
+ * @version 1.0.0
+ * @category CacheSystem
+ * @see {@link options}
+ * @see {@link get}
+ * @see {@link set}
+ * @see {@link cacheState}
+ * @see {@link _configModel}
  */
 @Injectable()
 export class CacheSystemService {

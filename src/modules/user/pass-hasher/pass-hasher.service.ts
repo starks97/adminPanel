@@ -19,6 +19,27 @@ import * as bcrypt from 'bcryptjs';
  * import { Injectable } from '@nestjs/common';
  * import * as bcrypt from 'bcryptjs';
  * ```
+ *
+ * ## Notes
+ *
+ * - The bcryptjs library is a JavaScript implementation of the bcrypt algorithm.
+ * - The salt factor of 10 used in this method is a reasonable default value that balances security
+ *   and performance. Higher values increase security but also increase the time required to hash
+ *   the password.
+ *
+ * @class
+ * @param {string} password - Password
+ * @param {string} oldPassword - Old Password
+ * @param {string} hashedPassword - Hashed Password
+ * @param {string} salt - Salt
+ *
+ *   ## Returns
+ * @returns {Promise<boolean>} - Promise that resolves to a boolean value indicating whether the
+ *   password matches the hashed password.
+ *
+ *   ## Links
+ * @see {@link hashPassword}
+ * @see {@link comparePassword}
  */
 @Injectable()
 export class PassHasherService {

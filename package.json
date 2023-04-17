@@ -25,7 +25,6 @@
     "seed": "ts-node prisma/seed/seed.ts"
   },
   "dependencies": {
-    "@casl/ability": "^6.3.3",
     "@nestjs-modules/mailer": "^1.8.1",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.3.1",
