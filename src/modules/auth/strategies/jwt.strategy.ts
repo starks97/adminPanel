@@ -21,6 +21,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   private static extractJWT(req: Request): string | null {
+    console.log(req.headers);
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.split(' ')[0] === 'Bearer') {
+      return authHeader.split(' ')[1];
+    }
+
     if (req.cookies && 'auth_token' in req.cookies && req.cookies.auth_token.length > 0) {
       return req.cookies.auth_token;
     }
@@ -30,6 +36,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   //return decoded token
   async validate(payload: JWTPayload) {
     if (!payload) throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
+
+    console.log(payload);
 
     return payload;
   }

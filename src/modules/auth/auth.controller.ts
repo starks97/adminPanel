@@ -37,19 +37,10 @@ export class AuthController {
 
     if (!response) throw new ForbiddenException('user_not_logged');
 
-    res.cookie('auth_token', response.data?.access_token, {
-      httpOnly: true,
-      sameSite: 'strict',
-      expires: new Date(Date.now() + 1000 * 60 * 15),
-    });
+    res.setHeader('auth_token', response.data.access_token);
+    res.setHeader('refresh_token', response.data.refresh_token);
 
-    res.cookie('refresh_token', response.data?.refresh_token, {
-      httpOnly: true,
-      sameSite: 'strict',
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1.5),
-    });
-
-    return res.status(200).json(response);
+    return res.status(200).json(response.data.rest);
   }
 
   @Post('logout')
@@ -66,6 +57,7 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   @Get('refresh_token')
   async refreshToken(@Req() req: Request, @Res() res: Response) {
+    console.log(req.headers);
     const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
 
     const response = await this.authService.refreshToken(decoded[0], req.cookies.refresh_token);

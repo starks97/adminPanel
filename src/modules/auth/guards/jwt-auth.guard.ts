@@ -14,7 +14,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  async canActivate(ctx: ExecutionContext) {
+  /*async canActivate(ctx: ExecutionContext) {
     const requiredRole = this.reflector.getAllAndOverride<string>('roles', [
       ctx.getClass(),
       ctx.getHandler(),
@@ -32,5 +32,5 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     //if (Roles[user.role] <= requiredRole) return false;
 
     return result;
-  }
+  }*/
 }
