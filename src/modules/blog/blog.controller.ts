@@ -7,7 +7,7 @@ import { BlogService } from './blog.service';
 @Controller('blog')
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
-
+  //useGuard(PowerGuard('create))
   /*@Post()
   create(@Body() createBlogDto: CreateBlogDto) {
     return this.blogService.create(createBlogDto);
