@@ -21,7 +21,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   private static extractJWT(req: Request): string | null {
-    console.log(req.headers);
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.split(' ')[0] === 'Bearer') {
       return authHeader.split(' ')[1];
@@ -36,8 +35,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   //return decoded token
   async validate(payload: JWTPayload) {
     if (!payload) throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
-
-    console.log(payload);
 
     return payload;
   }
