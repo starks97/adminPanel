@@ -9,6 +9,7 @@ import { CacheSystemModule } from './modules/cache-system/cache-system.module';
 import { MailModule } from './modules/mail/mail.module';
 import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { RoleSystemModule } from './modules/role-system/role-system.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PrismaModule } from '../prisma/prisma.module';
       envFilePath: '.env',
       isGlobal: true,
     }),
+    RoleSystemModule,
   ],
   controllers: [],
   providers: [

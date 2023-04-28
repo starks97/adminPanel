@@ -426,29 +426,52 @@ export class UserService {
     return users || [];
   }
 
-  /*async UpdateDataUser(id: string, data: UpdateUserDto): Promise<User | null> {
-    const { name, role } = data;
+  async AssignRoleToUser(userId: string, roleName: string) {
+    return await this.prisma.$transaction(async ctx => {
+      const user = await ctx.user.findUnique({
+        where: {
+          id: userId,
+        },
+        include: {
+          role: true,
+        },
+      });
 
-    const newDataUser = await this.prisma.user.update({
-      where: { id },
-      data: {
-        name: name,
-        role: role,
-        updatedAt: new Date(),
-      },
-      include: {
-        sessions: true,
-      },
+      if (!user) throw new HttpException(`${userId} user_not_found`, HttpStatus.NOT_FOUND);
+
+      const role = await ctx.role.findUnique({
+        where: {
+          name: roleName,
+        },
+      });
+
+      if (!role)
+        throw new HttpException(`role ${roleName} was not founded correctly`, HttpStatus.NOT_FOUND);
+
+      const updatedUser = await ctx.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          role: {
+            connect: {
+              name: role.name,
+            },
+          },
+        },
+        include: {
+          role: true,
+        },
+      });
+      await this.cache.cacheState<User>({
+        model: 'user',
+        storeKey: 'all_users',
+        exclude: ['password'],
+      });
+
+      return updatedUser;
     });
-
-    await this.cache.cacheState<User>({
-      model: 'user',
-      storeKey: 'all_users',
-      exclude: ['password'],
-    });
-
-    return newDataUser;
-  }*/
+  }
 
   /**
    * # Method: DeleteUser

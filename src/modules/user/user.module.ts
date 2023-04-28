@@ -1,3 +1,4 @@
+import { RoleSystemModule } from '../role-system/role-system.module';
 import { Module } from '@nestjs/common';
 
 import { PassHasherModule } from './pass-hasher/pass-hasher.module';
@@ -10,6 +11,6 @@ import { CacheSystemModule } from '../cache-system/cache-system.module';
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],
-  imports: [CacheSystemModule, PrismaModule, PassHasherModule],
+  imports: [CacheSystemModule, PrismaModule, PassHasherModule, RoleSystemModule],
 })
 export class UserModule {}
