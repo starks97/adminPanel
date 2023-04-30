@@ -20,14 +20,16 @@ import { UpdateUserDto, UpdateUserPasswordDto } from './dto';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Role, UserRole } from '../auth/role/role.decorator';
+import { Permission } from '../auth/decorator/permissio.decorator';
 
 @ApiTags('user')
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  //@Role('OWNER')
   @UseGuards(JwtAuthGuard)
+  @Permission(['READ'])
+  @UseGuards(RoleGuard)
   @Get('all_users')
   async findAllUser() {
     return await this.userService.FindAllUsers();

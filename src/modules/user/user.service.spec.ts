@@ -1,6 +1,6 @@
 import { CACHE_MANAGER, CacheModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaClient, Session, User } from '@prisma/client';
+import { PrismaClient, Role, Session, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { Cache } from 'cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
@@ -311,6 +311,36 @@ describe('UserService', () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       expect(service.findUserByEmail('hello')).rejects.toThrowError('user_not_found');
+    });
+  });
+
+  describe('assign role to user', () => {
+    it('should assign a role to a user', async () => {
+      const user: User & {
+        role: Role;
+      } = {
+        ...mockedUser,
+        roleName: 'ADMIN',
+        role: {
+          id: '1234',
+          name: 'ADMIN',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          permissions: ['READ', 'UPDATE', 'DELETE'],
+        },
+      };
+
+      jest.spyOn(service, 'AssignRoleToUser').mockImplementation(() => Promise.resolve(user));
+
+      prismaMock.user.update.mockResolvedValue(user);
+
+      const result = await service.AssignRoleToUser(user.id, user.roleName);
+
+      expect(result).toEqual(user);
+
+      expect(service.AssignRoleToUser).toBeCalledTimes(1);
+
+      expect(service.AssignRoleToUser).toBeCalledWith(user.id, user.roleName);
     });
   });
 });

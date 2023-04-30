@@ -9,10 +9,11 @@ import { SessionModule } from './session/session.module';
 import { JwtStrategy, LocalStrategy, RefreshTokenStrategy } from './strategies';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
+import { RoleGuard } from './guards/role.guard';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy, RefreshTokenStrategy],
+  providers: [AuthService, JwtStrategy, LocalStrategy, RefreshTokenStrategy, RoleGuard],
   imports: [
     UserModule,
     JwtModule.register({
@@ -24,5 +25,6 @@ import { CacheSystemModule } from '../cache-system/cache-system.module';
     SessionModule,
     PrismaModule,
   ],
+  exports: [AuthService, RoleGuard],
 })
 export class AuthModule {}

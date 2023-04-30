@@ -426,6 +426,47 @@ export class UserService {
     return users || [];
   }
 
+  /**
+   * # Method: AssignRoleToUser
+   *
+   * ## Description
+   *
+   * This method is used to assign a role to a user. It takes a string and an object as arguments.
+   *
+   * ## Usage
+   *
+   * @example
+   *   ```typescript
+   *   const id = '123456789';
+   *   const roleName = 'ADMIN';
+   *   try {
+   *   const user = await userService.AssignRoleToUser(id, roleName);
+   *   console.log(`Assigned role ${roleName} to user with id ${user.id}`);
+   *   } catch (error) {
+   *   console.error(`Failed to assign role to user: ${error.message}`);
+   *   }
+   *   ```
+   *
+   *   ## Params
+   *
+   * @param {string} id - User Id
+   * @param {string} roleName - Role Name
+   *
+   *   ## Returns
+   * @returns {Promise<User>} - User
+   *
+   *   ## Exceptions
+   * @throws {HttpException} User_not_found - User not found
+   * @throws {HttpException} Role_not_found - Role not found
+   *
+   *   ## Links
+   * @see {@link FindUserById}
+   * @see {@link FindRoleByName}
+   * @see {@link UpdateUser}
+   * @see {@link CacheSystemService}
+   * @see {@link User}
+   */
+
   async AssignRoleToUser(userId: string, roleName: string) {
     return await this.prisma.$transaction(async ctx => {
       const user = await ctx.user.findUnique({
