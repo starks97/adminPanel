@@ -54,8 +54,8 @@ model Role {
 
 model Post {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String    @unique
+  title       String    @unique()
+  description String
   content     String
   published   Boolean   @default(false)
   createdAt   DateTime  @default(now())

@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
-type ErrorType = 'User' | 'Role' | 'Permission' | 'RoleSystem';
+type ErrorType = 'User' | 'Role' | 'Permission' | 'RoleSystem' | 'Post';
 
 type ErrorCases =
   | 'user_not_updated'
@@ -11,7 +11,8 @@ type ErrorCases =
   | 'user_already_exist'
   | 'role_not_created'
   | 'role_already_exist'
-  | 'role_not_found';
+  | 'role_not_found'
+  | 'post_already_exists';
 
 interface IHandler {
   errorType: ErrorType;
