@@ -15,7 +15,8 @@ type ErrorCases =
   | 'role_not_found'
   | 'post_already_exists'
   | 'user_without_enough_permission'
-  | 'post_not_created';
+  | 'post_not_created'
+  | 'permission_not_found';
 
 interface IHandler {
   errorType: ErrorType;

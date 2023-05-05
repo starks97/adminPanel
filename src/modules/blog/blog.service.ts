@@ -4,7 +4,7 @@ import { CreatePostDto } from './dto/create-blog.dto';
 //import { UpdateBlogDto } from './dto/update-blog.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CustomErrorException } from '../utils';
-import { Post } from '@prisma/client';
+import { Post, User } from '@prisma/client';
 
 @Injectable()
 export class BlogService {
@@ -42,14 +42,17 @@ export class BlogService {
           },
         },
       },
-      include: {
-        user: true,
-      },
     });
 
     if (!post) throw new CustomErrorException({ errorCase: 'post_not_created', errorType: 'Post' });
 
-    await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
+    await this.cache.cacheState<Post & { user: User }>({
+      model: 'post',
+      storeKey: 'posts',
+      exclude: ['user'],
+    });
+
+    return post;
   }
 
   findAll() {

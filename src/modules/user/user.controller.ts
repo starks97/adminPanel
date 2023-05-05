@@ -26,7 +26,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Permission(['UPDATE'])
+  @Permission(['UPDATE', 'DELETE'])
   @UseGuards(RoleGuard)
   @Get('all_users')
   async findAllUser() {

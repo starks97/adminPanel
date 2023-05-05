@@ -19,6 +19,12 @@ export class RoleGuard implements CanActivate {
       context.getHandler(),
     );
 
+    if (!requestedPermissions)
+      throw new CustomErrorException({
+        errorCase: 'permission_not_found',
+        errorType: 'Permission',
+      });
+
     const { headers } = context.switchToHttp().getRequest();
 
     const token = headers.authorization.replace('Bearer ', '');
