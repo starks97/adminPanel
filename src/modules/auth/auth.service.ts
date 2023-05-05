@@ -167,7 +167,7 @@ export class AuthService {
   }
 
   _decodeToken(token: string) {
-    return this.jwtService.decode(token);
+    return this.jwtService.decode(token) as JWTPayload;
   }
 
   async _createTokens(payload: JWTPayload) {

@@ -1,32 +1,58 @@
+import { CustomErrorException } from './../../utils/handlerError';
 import { AuthService } from './../auth.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from './../../../../prisma/prisma.service';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { Permissions } from '@prisma/client';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector, private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly prisma: PrismaService,
+    private readonly auth: AuthService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requestedPermissions = this.reflector.get<string>('permissions', context.getHandler());
+    const requestedPermissions = this.reflector.get<Permissions[]>(
+      'permissions',
+      context.getHandler(),
+    );
 
     const { headers } = context.switchToHttp().getRequest();
 
     const token = headers.authorization.replace('Bearer ', '');
+
     if (!token) return false;
 
-    /*const userRole = await this.prisma.user.findUnique({
+    const decodeToken = this.auth._decodeToken(token);
+
+    const user = await this.prisma.user.findUnique({
       where: {
-        id: user.id,
+        id: decodeToken.id,
       },
       include: {
         role: true,
       },
     });
-*/
-    console.log(token);
+
+    if (!user)
+      throw new CustomErrorException({
+        errorType: 'User',
+        errorCase: 'user_not_found',
+        value: user.id,
+      });
+
+    const checkPermission = requestedPermissions.every(permission => {
+      if (user.role.permissions.includes(permission)) return true;
+    });
+
+    if (!checkPermission)
+      throw new CustomErrorException({
+        errorType: 'Permission',
+        errorCase: 'user_without_enough_permission',
+        value: user.id,
+      });
 
     return true;
   }

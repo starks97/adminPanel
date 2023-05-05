@@ -9,7 +9,6 @@ import {
   Post,
   Query,
   Res,
-  SetMetadata,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -19,7 +18,6 @@ import { RoleGuard } from './../auth/guards/role.guard';
 import { UpdateUserDto, UpdateUserPasswordDto } from './dto';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Role, UserRole } from '../auth/role/role.decorator';
 import { Permission } from '../auth/decorator/permissio.decorator';
 
 @ApiTags('user')
@@ -28,7 +26,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Permission(['READ'])
+  @Permission(['UPDATE'])
   @UseGuards(RoleGuard)
   @Get('all_users')
   async findAllUser() {

@@ -4,6 +4,7 @@ type ErrorType = 'User' | 'Role' | 'Permission' | 'RoleSystem' | 'Post';
 
 type ErrorCases =
   | 'user_not_updated'
+  | 'user_not_found'
   | 'user_not_deleted'
   | 'role_not_updated'
   | 'role_not_deleted'
@@ -12,7 +13,8 @@ type ErrorCases =
   | 'role_not_created'
   | 'role_already_exist'
   | 'role_not_found'
-  | 'post_already_exists';
+  | 'post_already_exists'
+  | 'user_without_enough_permission';
 
 interface IHandler {
   errorType: ErrorType;
@@ -26,17 +28,5 @@ export class CustomErrorException extends HttpException {
       `${errorType} with ${value} was not successfully fulfilled, ${errorCase}`,
       HttpStatus.NOT_FOUND,
     );
-  }
-}
-
-export class RoleNotFoundException extends HttpException {
-  constructor(roleName: string) {
-    super(`Role ${roleName} not found`, HttpStatus.NOT_FOUND);
-  }
-}
-
-export class ForbiddenException extends HttpException {
-  constructor(message: string) {
-    super(message, HttpStatus.FORBIDDEN);
   }
 }
