@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
 import { MailModule } from './../mail/mail.module';
@@ -13,9 +14,16 @@ import { RoleGuard } from './guards/role.guard';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy, RefreshTokenStrategy, RoleGuard],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    LocalStrategy,
+    RefreshTokenStrategy,
+    RoleGuard,
+    ConfigService,
+  ],
   imports: [
-    UserModule,
+    forwardRef(() => UserModule),
     JwtModule.register({
       secret: process.env.SECRET_JWT_KEY,
       signOptions: { expiresIn: '1d' },

@@ -1,3 +1,5 @@
+import { CacheSystemModule } from './../cache-system/cache-system.module';
+import { PrismaModule } from './../../../prisma/prisma.module';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { BlogController } from './blog.controller';
@@ -10,6 +12,7 @@ describe('BlogController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BlogController],
       providers: [BlogService],
+      imports: [PrismaModule, CacheSystemModule],
     }).compile();
 
     controller = module.get<BlogController>(BlogController);

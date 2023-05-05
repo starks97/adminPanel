@@ -1,3 +1,4 @@
+import { PrismaModule } from './../../../prisma/prisma.module';
 import { Test, TestingModule } from '@nestjs/testing';
 import { RoleSystemController } from './role-system.controller';
 import { RoleSystemService } from './role-system.service';
@@ -9,6 +10,7 @@ describe('RoleSystemController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RoleSystemController],
       providers: [RoleSystemService],
+      imports: [PrismaModule],
     }).compile();
 
     controller = module.get<RoleSystemController>(RoleSystemController);

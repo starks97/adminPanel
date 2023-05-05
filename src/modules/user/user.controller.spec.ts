@@ -1,3 +1,4 @@
+import { AuthModule } from './../auth/auth.module';
 import { ForbiddenException, Session } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
@@ -14,7 +15,7 @@ describe('UserController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [UserModule, PrismaModule, CacheSystemModule],
+      imports: [UserModule, PrismaModule, CacheSystemModule, AuthModule],
       controllers: [UserController],
       providers: [UserService, PassHasherService],
     }).compile();

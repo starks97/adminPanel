@@ -1,3 +1,4 @@
+import { JWTPayload } from './interfaces/jwt.interface';
 import { ForbiddenException } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule, JwtService } from '@nestjs/jwt';
@@ -245,14 +246,11 @@ describe('AuthService', () => {
       const decoded = jwtService.decode(token);
       expect(decoded).toBeDefined();
 
-      jest.spyOn(service, '_decodeToken').mockImplementation(() =>
-        Promise.resolve({
-          id: user.id,
-          email: user.email,
-        }),
-      );
+      jest
+        .spyOn(service, '_decodeToken')
+        .mockImplementation(() => ({ id: user.id, email: user.email }));
 
-      const result = await service._decodeToken(tokens.authToken);
+      const result = service._decodeToken(tokens.authToken);
 
       expect(result).toEqual({
         id: user.id,
