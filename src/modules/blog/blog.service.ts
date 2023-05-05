@@ -4,6 +4,7 @@ import { CreatePostDto } from './dto/create-blog.dto';
 //import { UpdateBlogDto } from './dto/update-blog.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CustomErrorException } from '../utils';
+import { Post } from '@prisma/client';
 
 @Injectable()
 export class BlogService {
@@ -14,7 +15,7 @@ export class BlogService {
       },
     });
   }
-  async createPost(createPostDto: CreatePostDto) {
+  async createPost(userId: string, createPostDto: CreatePostDto) {
     const { title, content, description } = createPostDto;
     const postInDb = await this.prisma.post.findUnique({
       where: {
@@ -36,13 +37,19 @@ export class BlogService {
         description,
         createdAt: new Date(),
         user: {
-          connect: {},
+          connect: {
+            id: userId,
+          },
         },
       },
       include: {
         user: true,
       },
     });
+
+    if (!post) throw new CustomErrorException({ errorCase: 'post_not_created', errorType: 'Post' });
+
+    await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
   }
 
   findAll() {

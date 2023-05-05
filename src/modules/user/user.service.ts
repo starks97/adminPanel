@@ -6,6 +6,7 @@ import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
 import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CacheSystemService } from '../cache-system/cache-system.service';
+import { PrismaMethods } from 'prisma/context';
 
 /**
  * # User Service

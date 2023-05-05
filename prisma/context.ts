@@ -15,10 +15,13 @@ export type MockContext = {
   prisma: DeepMockProxy<PrismaClient>;
 };
 
-type T_KEYS<T> = keyof T;
+type KeysOfType<T, U> = {
+  [K in keyof T]: T[K] extends U ? K : never;
+}[keyof T];
+
 interface PrismaProps<T> {
   model: Uncapitalize<Prisma.ModelName>;
-  exclude?: T_KEYS<T>[];
+  exclude?: KeysOfType<T, any>[];
   id?: string;
   data?: any;
   value?: any;
@@ -31,9 +34,7 @@ export class PrismaMethods {
   async findMany<T>({ model, exclude }: PrismaProps<T>): Promise<T[] | null> {
     const getOptions = this.options.get(model) ?? {};
 
-    const data: T[] = await (this.prisma as any)[model].findMany(getOptions);
-
-    if (!data) return null;
+    const data: T[] = await (this.prisma as any)[model].findMany({ ...getOptions });
 
     if (exclude) {
       data?.forEach(data => {
@@ -43,7 +44,7 @@ export class PrismaMethods {
       });
     }
 
-    return data;
+    return data || [];
   }
 
   async findUnique<T>({ model, id, exclude }: PrismaProps<T>): Promise<T | null> {

@@ -1,17 +1,22 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 
 import { BlogService } from './blog.service';
+import { CreatePostDto } from './dto/create-blog.dto';
+import { Request } from 'express';
 //import { CreateBlogDto } from './dto/create-blog.dto';
 //import { UpdateBlogDto } from './dto/update-blog.dto';
 
 @Controller('blog')
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
-  //useGuard(PowerGuard('create))
-  /*@Post()
-  create(@Body() createBlogDto: CreateBlogDto) {
-    return this.blogService.create(createBlogDto);
-  }*/
+  @Post('/create_post')
+  create(@Body() createBlogDto: CreatePostDto, @Req() req: Request) {
+    const userID = req.headers.authorization;
+
+    console.log(userID);
+
+    //return this.blogService.createPost(createBlogDto);
+  }
 
   @Get()
   findAll() {
