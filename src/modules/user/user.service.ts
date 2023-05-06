@@ -1,5 +1,6 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { CustomErrorException } from './../utils/handlerError';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, User } from '@prisma/client';
 
 import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
 import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
@@ -288,17 +289,22 @@ export class UserService {
       });
 
       if (!user) {
-        throw new Error(`User with id ${id} not found`);
+        throw new NotFoundException(`User with id ${id} not found`);
       }
 
       delete user.password;
 
       await this.cache.set('user:' + id, user, 60);
 
-      return user as User;
-    } catch (error) {
-      console.error(`Error finding user with id ${id}:`, error);
-      throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
+      return user;
+    } catch (e) {
+      console.error(e);
+      throw new CustomErrorException({
+        errorCase: 'user_not_found',
+        errorType: 'User',
+        value: id,
+        prismaError: e as Prisma.PrismaClientKnownRequestError,
+      });
     }
   }
 

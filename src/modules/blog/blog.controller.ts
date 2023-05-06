@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -34,14 +35,22 @@ export class BlogController {
     return res.status(200).json({ message: 'Post created successfully', post });
   }
 
-  @Get()
-  findAll() {
-    return this.blogService.findAll();
+  @Get('/all_posts')
+  async findAll(@Res() res: Response) {
+    const post = await this.blogService.findAllPosts();
+    return res.status(200).json({ message: 'Posts found successfully', post });
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.blogService.findOne(+id);
+  @Get('post/:id')
+  async findPost(@Param('id') id: string, @Res() res: Response) {
+    const response = await this.blogService.findPostById(id);
+    return res.status(200).json({ message: 'Post found successfully', response });
+  }
+
+  @Get('/find_post_by')
+  async findPostBy(@Query('q') q: string, @Res() res: Response) {
+    const response = await this.blogService.findPostByQuery(q);
+    return res.status(200).json({ message: 'Post found successfully', response });
   }
 
   /*@Patch(':id')

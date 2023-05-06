@@ -63,10 +63,8 @@ export class UserController {
   }
 
   @Get()
-  searchUser(@Query('search_user_by') query: string, @Res() res: Response) {
-    const response = this.userService.FindUserByEmailorName(query);
-
-    if (!response) throw new ForbiddenException('user_not_found');
+  async searchUser(@Query('search_user_by') query: string, @Res() res: Response) {
+    const response = await this.userService.FindUserByEmailorName(query);
 
     return res.status(200).json(response);
   }

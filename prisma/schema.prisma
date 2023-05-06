@@ -57,6 +57,9 @@ model Post {
   title       String    @unique()
   description String
   content     String
+  images      String[]
+  tags        String[]
+  category    Category  @default(TECHNOLOGY)
   published   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
@@ -84,4 +87,17 @@ enum Permissions {
   READ
   UPDATE
   DELETE
+}
+
+enum Category {
+  GENERAL
+  SCIENCE
+  TECHNOLOGY
+  SPORTS
+  POLITICS
+  ECONOMY
+  ENTERTAINMENT
+  HEALTH
+  EDUCATION
+  OTHER
 }

@@ -1,3 +1,4 @@
+import { AuthModule } from './../auth/auth.module';
 import { CacheSystemModule } from './../cache-system/cache-system.module';
 import { PrismaModule } from './../../../prisma/prisma.module';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -12,7 +13,7 @@ describe('BlogController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BlogController],
       providers: [BlogService],
-      imports: [PrismaModule, CacheSystemModule],
+      imports: [PrismaModule, CacheSystemModule, AuthModule],
     }).compile();
 
     controller = module.get<BlogController>(BlogController);
