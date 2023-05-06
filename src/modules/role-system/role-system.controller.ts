@@ -11,31 +11,31 @@ import { Response } from 'express';
 export class RoleSystemController {
   constructor(private readonly roleSystemService: RoleSystemService) {}
 
-  @Post('create_role')
+  @Post('/create_role')
   async createRole(@Body() createRoleSystemDto: CreateRoleSystemDto, @Res() res: Response) {
     const response = await this.roleSystemService.createRole(createRoleSystemDto);
 
     return res.status(200).json({ message: `role was succesfully created`, response });
   }
 
-  @Get('all_roles')
+  @Get('/all_roles')
   async findAllRoles() {
     return await this.roleSystemService.findAllRoles();
   }
 
-  @Get(':id')
+  @Get('/role/:id')
   async findRoleById(@Param('id') id: string) {
     return await this.roleSystemService.findRoleById(id);
   }
 
   @Get()
-  async findRoleByName(@Query('search_role_by') name: string, @Res() res: Response) {
+  async findRoleByName(@Query('name') name: string, @Res() res: Response) {
     const response = await this.roleSystemService.findRoleByName(name);
 
     return res.status(200).json(response);
   }
 
-  @Patch(':id')
+  @Patch('/update_role/:id')
   async updateRole(
     @Param('id') id: string,
     @Body() updateRoleSystemDto: UpdateRoleSystemDto,
@@ -48,7 +48,7 @@ export class RoleSystemController {
       .json({ message: `role with id: ${response.id} was succesfully updated` });
   }
 
-  @Delete(':id')
+  @Delete('/delete_role/:id')
   async removeRole(@Param('id') id: string, @Res() res: Response) {
     const response = await this.roleSystemService.deleteRole(id);
 

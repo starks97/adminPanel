@@ -62,8 +62,8 @@ export class UserController {
     return res.status(200).json(response);
   }
 
-  @Get()
-  async searchUser(@Query('search_user_by') query: string, @Res() res: Response) {
+  @Get('/search_user_by?')
+  async searchUser(@Query('q') query: string, @Res() res: Response) {
     const response = await this.userService.FindUserByEmailorName(query);
 
     return res.status(200).json(response);

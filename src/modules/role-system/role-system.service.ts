@@ -4,6 +4,7 @@ import { CreateRoleSystemDto } from './dto/create-role-system.dto';
 import { UpdateRoleSystemDto } from './dto/update-role-system.dto';
 
 import { CustomErrorException } from '../utils';
+import { Prisma, Role } from '@prisma/client';
 
 @Injectable()
 export class RoleSystemService {
@@ -51,21 +52,35 @@ export class RoleSystemService {
     return roles ?? [];
   }
 
-  async findRoleByName(name: string) {
-    const role = await this.prisma.role.findUnique({
-      where: {
-        name,
-      },
-    });
-
-    if (!role)
-      throw new CustomErrorException({
-        errorType: 'Role',
-        value: 'name',
-        errorCase: 'role_not_found',
+  async findRoleByName(name: string): Promise<Role | CustomErrorException> {
+    try {
+      const role = await this.prisma.role.findUnique({
+        where: {
+          name,
+        },
       });
 
-    return role;
+      if (!role)
+        throw new CustomErrorException({
+          errorType: 'Role',
+          value: 'name',
+          errorCase: 'role_not_found',
+        });
+
+      return role;
+    } catch (e) {
+      console.log(e);
+      if (e instanceof CustomErrorException) {
+        throw e;
+      } else {
+        throw new CustomErrorException({
+          errorCase: 'post_not_found',
+          errorType: 'Post',
+          value: e,
+          prismaError: e as Prisma.PrismaClientKnownRequestError,
+        });
+      }
+    }
   }
 
   async findRoleById(id: string) {
