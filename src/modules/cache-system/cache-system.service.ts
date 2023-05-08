@@ -10,6 +10,8 @@ interface CacheStateProps<T> {
   model: Uncapitalize<Prisma.ModelName>;
   storeKey: string;
   exclude?: T_KEYS<T>[];
+  offset?: number;
+  limit?: number;
 }
 
 /**
@@ -209,10 +211,20 @@ export class CacheSystemService {
    * - Cached data is stored in memory and will be lost if the application is restarted.
    */
 
-  async cacheState<T>({ model, storeKey, exclude }: CacheStateProps<T>): Promise<T[] | null> {
+  async cacheState<T>({
+    model,
+    storeKey,
+    exclude,
+    offset = 0,
+    limit,
+  }: CacheStateProps<T>): Promise<T[] | null> {
     const getOptions = this.options.get(model) ?? {};
 
-    const data: T[] = await (this.prisma as any)[model].findMany(getOptions);
+    const data: T[] = await (this.prisma as any)[model].findMany({
+      ...getOptions,
+      skip: offset,
+      take: limit,
+    });
 
     if (!data) return null;
 
@@ -224,7 +236,10 @@ export class CacheSystemService {
       });
     }
 
-    await this.set(storeKey, data, 1000);
+    const cacheSize = Math.min(data.length, limit);
+    const cacheData = data.slice(0, cacheSize);
+
+    await this.set(storeKey, data ? data : cacheData, 1000);
 
     return data;
   }

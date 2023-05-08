@@ -36,25 +36,29 @@ export class BlogController {
   }
 
   @Get('/post')
-  async findAll(@Query('q') q: string, @Res() res: Response) {
-    const post = await this.blogService.findAllPosts();
-    const search_post = await this.blogService.findPostByQuery(q);
+  async findPostByQueries(
+    @Query('q') q: string,
+    @Query('offset') offset: string,
+    @Query('limit') limit: string,
+    @Res() res: Response,
+  ) {
+    let posts;
 
     if (q) {
-      return res.status(200).json({ message: 'Posts found successfully', search_post });
+      posts = await this.blogService.findPostByQuery(q);
+      return res.status(200).json({ message: 'Post found successfully', search_post: posts });
     }
-    return res.status(200).json({ message: 'Posts found successfully', post });
+
+    const postOffset = offset ? parseInt(offset, 10) : 0;
+    const postLimit = limit ? parseInt(limit, 10) : 10;
+
+    posts = await this.blogService.findAllPosts(postOffset, postLimit);
+    return res.status(200).json({ message: 'Posts found successfully', posts });
   }
 
   @Get('post/:id')
   async findPost(@Param('id') id: string, @Res() res: Response) {
     const response = await this.blogService.findPostById(id);
-    return res.status(200).json({ message: 'Post found successfully', response });
-  }
-
-  @Get('/find_post_by?')
-  async findPostBy(@Query('q') q: string, @Res() res: Response) {
-    const response = await this.blogService.findPostByQuery(q);
     return res.status(200).json({ message: 'Post found successfully', response });
   }
 

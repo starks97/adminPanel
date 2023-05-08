@@ -15,7 +15,7 @@ export class BlogService {
     createPostDto: CreatePostDto,
   ): Promise<Post | CustomErrorException> {
     try {
-      const { title, content, description } = createPostDto;
+      const { title, content, description, category, images, tags } = createPostDto;
       const postInDb = await this.prisma.post.findUnique({
         where: {
           title,
@@ -34,6 +34,9 @@ export class BlogService {
           title,
           content,
           description,
+          images,
+          tags,
+          category,
           createdAt: new Date(),
           user: {
             connect: {
@@ -67,15 +70,19 @@ export class BlogService {
     }
   }
 
-  async findAllPosts(): Promise<Post[]> {
-    const dataCache = await this.cache.get('posts');
+  async findAllPosts(offset: number, limit: number): Promise<Post[]> {
+    const cacheKey = `posts_${offset}_${limit}`;
+    const dataCache = await this.cache.get(cacheKey);
     if (dataCache) return dataCache;
     const posts = await this.prisma.post.findMany({
-      skip: 0,
-      take: 10,
+      skip: offset,
+      take: limit,
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
-    await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
+    await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts', offset, limit });
 
     return posts || [];
   }
@@ -110,7 +117,7 @@ export class BlogService {
 
   async findPostByQuery(q: string): Promise<Post | CustomErrorException> {
     try {
-      const dataCache = await this.cache.get('posts');
+      const dataCache = await this.cache.get('post:' + q);
       if (dataCache) return dataCache;
       const posts = await this.prisma.post.findFirst({
         where: {
@@ -131,7 +138,7 @@ export class BlogService {
 
       if (!posts) throw new NotFoundException(`Post with query ${q} not found`);
 
-      await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
+      await this.cache.set('post:' + q, posts, 60);
 
       return posts;
     } catch (e) {
@@ -149,9 +156,7 @@ export class BlogService {
     }
   }
 
-  /*update(id: number, updateBlogDto: UpdateBlogDto) {
-    return `This action updates a #${id} blog`;
-  }*/
+  async updatePost(id: string) {}
 
   remove(id: number) {
     return `This action removes a #${id} blog`;
