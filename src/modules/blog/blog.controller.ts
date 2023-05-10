@@ -1,3 +1,5 @@
+import { UpdatePostDto } from './dto/update-post.dto';
+import { SearchPostDto } from './dto/search-post.dto';
 import { JwtAuthGuard } from './../auth/guards/jwt-auth.guard';
 import {
   Body,
@@ -43,17 +45,16 @@ export class BlogController {
     @Res() res: Response,
   ) {
     let posts;
-
-    if (q) {
-      posts = await this.blogService.findPostByQuery(q);
-      return res.status(200).json({ message: 'Post found successfully', search_post: posts });
-    }
-
     const postOffset = offset ? parseInt(offset, 10) : 0;
     const postLimit = limit ? parseInt(limit, 10) : 10;
 
+    if (q) {
+      posts = await this.blogService.findPostByQuery(q, postOffset, postLimit);
+      return res.status(200).json({ message: 'Post found successfully', data: posts });
+    }
+
     posts = await this.blogService.findAllPosts(postOffset, postLimit);
-    return res.status(200).json({ message: 'Posts found successfully', posts });
+    return res.status(200).json({ message: 'Posts found successfully', data: posts });
   }
 
   @Get('post/:id')
@@ -62,13 +63,44 @@ export class BlogController {
     return res.status(200).json({ message: 'Post found successfully', response });
   }
 
-  /*@Patch(':id')
-  update(@Param('id') id: string, @Body() updateBlogDto: UpdateBlogDto) {
-    return this.blogService.update(+id, updateBlogDto);
-  }*/
+  @Get('post/category/:category')
+  async findPostByCategory(
+    @Param() params: SearchPostDto,
+    @Query('offset') offset: string,
+    @Query('limit') limit: string,
+    @Res() res: Response,
+  ) {
+    const postOffset = offset ? parseInt(offset, 10) : 0;
+    const postLimit = limit ? parseInt(limit, 10) : 10;
+    const response = await this.blogService.findPostByCategory({
+      ...params,
+      offset: postOffset,
+      limit: postLimit,
+    });
+    return res.status(200).json({ message: 'Post found successfully', response });
+  }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.blogService.remove(+id);
+  @UseGuards(JwtAuthGuard)
+  @Permission(['UPDATE'])
+  @UseGuards(RoleGuard)
+  @Patch('/post/:id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateBlogDto: UpdatePostDto,
+    @Res() res: Response,
+  ) {
+    const response = await this.blogService.updatePost(id, updateBlogDto);
+
+    return res.status(200).json({ message: 'Post updated successfully', response });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Permission(['DELETE'])
+  @UseGuards(RoleGuard)
+  @Delete('/post/:id')
+  async remove(@Param('id') id: string, @Res() res: Response) {
+    await this.blogService.deletePost(id);
+
+    return res.status(200).json({ message: `Post ${id} was deleted successfully` });
   }
 }

@@ -190,6 +190,8 @@ export class CacheSystemService {
    *   model: 'user',
    *   storeKey: 'users',
    *   exclude: ['password', 'email', 'roleName']
+   *   offset: 0,
+   *   limit: 10
    *   })
    *
    *   ```
@@ -200,6 +202,8 @@ export class CacheSystemService {
    *
    *   - StoreKey: A string representing the key to use when caching the data.
    *   - Exclude: An array of strings representing the keys to exclude from the cached data.
+   *   - Offset: A number representing the offset to use when retrieving data from the Prisma model.
+   *   - Limit: A number representing the limit to use when retrieving data from the Prisma model.
    *
    *   ## Returns
    * @returns An array of objects representing the data retrieved from the Prisma model, or
