@@ -9,7 +9,7 @@ export const createPostSchema = z.object({
   content: z.string().max(10000).min(100).nonempty(),
   tags: z.array(z.string().max(20).min(3).nonempty()).optional(),
   category: z.nativeEnum(Category).optional(),
-  images: z.array(z.string().url()).optional(),
+  images: z.array(z.string().url()).nonempty().optional(),
 });
 
 export class CreatePostDto extends createZodDto(createPostSchema) {}

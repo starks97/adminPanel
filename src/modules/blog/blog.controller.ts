@@ -1,3 +1,4 @@
+import { CloudinarySystemService } from './cloudinary/cloudinary-system.service';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { SearchPostDto } from './dto/search-post.dto';
 import { JwtAuthGuard } from './../auth/guards/jwt-auth.guard';
@@ -12,7 +13,9 @@ import {
   Query,
   Req,
   Res,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 
 import { BlogService } from './blog.service';
@@ -21,6 +24,7 @@ import { Request, Response } from 'express';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Permission } from '../auth/decorator/permissio.decorator';
 import { ApiTags } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Blog')
 @Controller('blog')
@@ -30,9 +34,11 @@ export class BlogController {
   @UseGuards(JwtAuthGuard)
   @Permission(['CREATE'])
   @UseGuards(RoleGuard)
+  @UseInterceptors(FilesInterceptor('files'))
   @Post('/post')
   async create(@Body() createPostDto: CreatePostDto, @Req() req: Request, @Res() res: Response) {
     const user = req.user['id'];
+
     const post = await this.blogService.createPost(user, createPostDto);
     return res.status(200).json({ message: 'Post created successfully', post });
   }

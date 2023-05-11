@@ -7,11 +7,14 @@ import { PrismaModule } from 'prisma/prisma.module';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
 import { LoggerMiddleware } from 'src/middlewares/logger.middleware';
 import { AuthModule } from '../auth/auth.module';
+import { ConfigModule } from '@nestjs/config';
+
+import { CloudinarySystemModule } from './cloudinary/cloudinary-system.module';
 
 @Module({
   controllers: [BlogController],
   providers: [BlogService, JwtService, LoggerMiddleware],
-  imports: [PrismaModule, CacheSystemModule, AuthModule],
+  imports: [PrismaModule, CacheSystemModule, AuthModule, CloudinarySystemModule, ConfigModule],
 })
 export class BlogModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

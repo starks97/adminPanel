@@ -1,3 +1,4 @@
+import { CloudinarySystemService } from './cloudinary/cloudinary-system.service';
 import { createPostSchema } from './dto/create-blog.dto';
 import { CacheSystemService } from './../cache-system/cache-system.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -16,7 +17,7 @@ export class BlogService {
     createPostDto: CreatePostDto,
   ): Promise<Post | CustomErrorException> {
     try {
-      const { title, content, description, category, images, tags } = createPostDto;
+      const { title, content, description, category, tags, images } = createPostDto;
       const postInDb = await this.prisma.post.findUnique({
         where: {
           title,

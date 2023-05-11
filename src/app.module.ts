@@ -25,7 +25,7 @@ import { RoleSystemModule } from './modules/role-system/role-system.module';
     }),
     RoleSystemModule,
   ],
-  controllers: [],
+
   providers: [
     {
       provide: APP_PIPE,
