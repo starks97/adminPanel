@@ -649,9 +649,7 @@ export class UserService {
   async findUserByEmail(email: string): Promise<User | null> {
     const dataCache = await this.cache.get('user:' + email);
 
-    if (dataCache) {
-      return dataCache;
-    }
+    if (dataCache) return dataCache;
 
     const user = await this.prisma.user.findUnique({
       where: { email },

@@ -28,12 +28,15 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Permission(['UPDATE', 'DELETE'])
   @UseGuards(RoleGuard)
-  @Get('all_users')
+  @Get('/user')
   async findAllUser() {
     return await this.userService.FindAllUsers();
   }
 
-  @Post(':id')
+  @UseGuards(JwtAuthGuard)
+  @Permission(['UPDATE', 'DELETE'])
+  @UseGuards(RoleGuard)
+  @Post('/user/:id')
   async AssignRoleToUser(
     @Param('id') id: string,
     @Body('roleName') roleName: string,
@@ -45,13 +48,17 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id')
+  @Permission(['UPDATE'])
+  @UseGuards(RoleGuard)
+  @Get('/user:id')
   findUserById(@Param('id') id: string) {
     return this.userService.FindUserById(id);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Patch(':id')
+  @Permission(['UPDATE'])
+  @UseGuards(RoleGuard)
+  @Patch('/user/:id')
   async updatePasswordUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserPasswordDto,
@@ -62,14 +69,16 @@ export class UserController {
     return res.status(200).json(response);
   }
 
-  @Get('/search_user_by?')
+  @Get('/user')
   async searchUser(@Query('q') query: string, @Res() res: Response) {
     const response = await this.userService.FindUserByEmailorName(query);
 
     return res.status(200).json(response);
   }
-
-  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @Permission(['UPDATE'])
+  @UseGuards(RoleGuard)
+  @Delete('/user/:id')
   removeUser(@Param('id') id: string, @Res() res: Response) {
     const response = this.userService.DeleteUser(id);
 

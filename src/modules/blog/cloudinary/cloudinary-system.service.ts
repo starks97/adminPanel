@@ -1,39 +1,33 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { UploadApiErrorResponse, UploadApiResponse, v2 } from 'cloudinary';
 
-import { v2, UploadApiErrorResponse, UploadApiResponse } from 'cloudinary';
-
-const cloudinary = v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME as string,
-  api_key: process.env.CLOUDINARY_API_KEY as string,
-  api_secret: process.env.CLOUDINARY_API_SECRET as string,
-});
-
-export interface UploadedFile {
-  filename: string;
-  url: string;
-}
+import toStream = require('buffer-to-stream');
 
 @Injectable()
 export class CloudinarySystemService {
-  async upload(files: Express.Multer.File[]): Promise<UploadedFile[]> {
-    try {
-      const uploadedFiles: UploadedFile[] = [];
+  async upload(
+    files: Express.Multer.File[],
+  ): Promise<Pick<UploadApiResponse, 'url' | 'resource_type'>[]> {
+    const uploadPromises = files.map(file => {
+      return new Promise<Pick<UploadApiResponse, 'url' | 'resource_type'>>((resolve, reject) => {
+        const uploadStream = v2.uploader.upload_stream(
+          { folder: 'blog/', use_filename: true },
+          (error: Error, result: UploadApiResponse) => {
+            if (error) {
+              reject(error.message);
+            } else {
+              resolve({
+                url: result.url,
+                resource_type: result.resource_type,
+              });
+            }
+          },
+        );
 
-      for (let file of files) {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder: 'blog',
-          use_filename: true,
-        });
+        toStream(file.buffer).pipe(uploadStream);
+      });
+    });
 
-        if (!result) throw new Error('something happend with the file');
-
-        uploadedFiles.push(result);
-      }
-
-      return uploadedFiles;
-    } catch (e) {
-      console.log(e.message);
-    }
+    return Promise.all(uploadPromises);
   }
 }

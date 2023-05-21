@@ -23,15 +23,14 @@ import { CreateUserDto, LoginUserDto } from '../user/dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('signup')
+  @Post('/signup')
   async createUser(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
     const response = await this.authService.SignUp(createUserDto);
 
     return res.status(200).json(response);
   }
 
-  //@UseGuards(LocalAuthGuard)
-  @Post('signin')
+  @Post('/signin')
   async findByLogin(@Body() { email, password }: LoginUserDto, @Res() res: Response) {
     const response = await this.authService.SignIn({ email, password });
 
@@ -47,7 +46,7 @@ export class AuthController {
     return res.status(200).json(response.data.rest);
   }
 
-  @Post('logout')
+  @Post('/logout')
   async logout(@Res() res: Response, @Req() req: Request) {
     const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
 
@@ -60,7 +59,7 @@ export class AuthController {
   }
 
   @UseGuards(RefreshTokenGuard)
-  @Get('refresh_token')
+  @Get('/refresh_token')
   async refreshToken(@Req() req: Request, @Res() res: Response) {
     const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
 

@@ -10,14 +10,22 @@ import { Category, Post, Prisma, User } from '@prisma/client';
 
 @Injectable()
 export class BlogService {
-  constructor(private readonly prisma: PrismaService, private readonly cache: CacheSystemService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheSystemService,
+    private readonly cloudinary: CloudinarySystemService,
+  ) {}
 
   async createPost(
     userId: string,
     createPostDto: CreatePostDto,
+    files: Array<Express.Multer.File>,
   ): Promise<Post | CustomErrorException> {
     try {
-      const { title, content, description, category, tags, images } = createPostDto;
+      const { title, content, description, category, tags } = createPostDto;
+
+      const uploadImages = await this.cloudinary.upload(files);
+
       const postInDb = await this.prisma.post.findUnique({
         where: {
           title,
@@ -36,9 +44,13 @@ export class BlogService {
           title,
           content,
           description,
-          images,
           tags,
           category,
+          resources: {
+            createMany: {
+              data: uploadImages,
+            },
+          },
           createdAt: new Date(),
           user: {
             connect: {
@@ -58,7 +70,7 @@ export class BlogService {
 
       return post;
     } catch (e) {
-      console.log(e.messsage);
+      console.log(e);
       if (e instanceof CustomErrorException) {
         throw e;
       } else {

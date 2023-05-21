@@ -11,14 +11,14 @@ import { Response } from 'express';
 export class RoleSystemController {
   constructor(private readonly roleSystemService: RoleSystemService) {}
 
-  @Post('/create_role')
+  @Post('/role')
   async createRole(@Body() createRoleSystemDto: CreateRoleSystemDto, @Res() res: Response) {
     const response = await this.roleSystemService.createRole(createRoleSystemDto);
 
     return res.status(200).json({ message: `role was succesfully created`, response });
   }
 
-  @Get('/all_roles')
+  @Get('/role')
   async findAllRoles() {
     return await this.roleSystemService.findAllRoles();
   }
@@ -35,7 +35,7 @@ export class RoleSystemController {
     return res.status(200).json(response);
   }
 
-  @Patch('/update_role/:id')
+  @Patch('/role/:id')
   async updateRole(
     @Param('id') id: string,
     @Body() updateRoleSystemDto: UpdateRoleSystemDto,
@@ -48,7 +48,7 @@ export class RoleSystemController {
       .json({ message: `role with id: ${response.id} was succesfully updated` });
   }
 
-  @Delete('/delete_role/:id')
+  @Delete('/role/:id')
   async removeRole(@Param('id') id: string, @Res() res: Response) {
     const response = await this.roleSystemService.deleteRole(id);
 

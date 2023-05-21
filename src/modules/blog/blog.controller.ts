@@ -36,10 +36,15 @@ export class BlogController {
   @UseGuards(RoleGuard)
   @UseInterceptors(FilesInterceptor('files'))
   @Post('/post')
-  async create(@Body() createPostDto: CreatePostDto, @Req() req: Request, @Res() res: Response) {
+  async create(
+    @Body() createPostDto: CreatePostDto,
+    @Req() req: Request,
+    @Res() res: Response,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+  ) {
     const user = req.user['id'];
 
-    const post = await this.blogService.createPost(user, createPostDto);
+    const post = await this.blogService.createPost(user, createPostDto, files);
     return res.status(200).json({ message: 'Post created successfully', post });
   }
 
