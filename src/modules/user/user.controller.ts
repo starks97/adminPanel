@@ -36,7 +36,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Permission(['UPDATE', 'DELETE'])
   @UseGuards(RoleGuard)
-  @Post('/user/:id')
+  @Post('/:id')
   async AssignRoleToUser(
     @Param('id') id: string,
     @Body('roleName') roleName: string,
@@ -50,7 +50,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Permission(['UPDATE'])
   @UseGuards(RoleGuard)
-  @Get('/user:id')
+  @Get('/:id')
   findUserById(@Param('id') id: string) {
     return this.userService.FindUserById(id);
   }
@@ -58,7 +58,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Permission(['UPDATE'])
   @UseGuards(RoleGuard)
-  @Patch('/user/:id')
+  @Patch('/:id')
   async updatePasswordUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserPasswordDto,

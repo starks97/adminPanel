@@ -6,7 +6,7 @@ import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
 
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CustomErrorException } from '../utils';
-import { Category, Post, Prisma, User } from '@prisma/client';
+import { Post, Prisma, Resource } from '@prisma/client';
 
 @Injectable()
 export class BlogService {
@@ -98,6 +98,9 @@ export class BlogService {
         orderBy: {
           createdAt: 'desc',
         },
+        include: {
+          resources: true,
+        },
       });
 
       const data = { posts, total: posts.length };
@@ -126,6 +129,9 @@ export class BlogService {
       if (dataCache) return dataCache;
       const post = await this.prisma.post.findUnique({
         where: { id },
+        include: {
+          resources: true,
+        },
       });
 
       if (!post) throw new NotFoundException(`Post with ID ${id} not found`);
@@ -167,6 +173,9 @@ export class BlogService {
         },
         skip: offset,
         take: limit,
+        include: {
+          resources: true,
+        },
       });
 
       const data = { posts, total: posts.length };
@@ -203,6 +212,9 @@ export class BlogService {
         },
         skip: params?.offset,
         take: params?.limit,
+        include: {
+          resources: true,
+        },
       });
 
       const data = { posts, total: posts.length };
@@ -261,6 +273,41 @@ export class BlogService {
     try {
       const post = await this.prisma.post.delete({
         where: { id },
+      });
+
+      if (!post)
+        throw new CustomErrorException({
+          errorCase: 'post_not_found',
+          errorType: 'Post',
+          value: id,
+        });
+
+      //await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
+      return post;
+    } catch (e) {
+      console.log(e);
+      if (e instanceof CustomErrorException) {
+        throw e;
+      } else {
+        throw new CustomErrorException({
+          errorCase: 'post_not_found',
+          errorType: 'Post',
+          value: e,
+          prismaError: e as Prisma.PrismaClientKnownRequestError,
+        });
+      }
+    }
+  }
+
+  async updateResources(id: string, resources: Resource[]) {
+    try {
+      const post = await this.prisma.post.update({
+        where: { id },
+        data: {
+          resources: {
+            create: resources,
+          },
+        },
       });
 
       if (!post)

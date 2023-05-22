@@ -49,8 +49,7 @@
     "passport-local": "^1.0.0",
     "prettier-plugin-jsdoc": "^0.4.2",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.2.0",
-    "stream-buffers": "^3.0.2"
+    "rxjs": "^7.2.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",

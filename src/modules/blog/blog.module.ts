@@ -1,4 +1,4 @@
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 
 import { BlogController } from './blog.controller';

@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { Module, forwardRef } from '@nestjs/common';
+import { Module, forwardRef, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
 import { MailModule } from './../mail/mail.module';
@@ -11,6 +11,7 @@ import { JwtStrategy, LocalStrategy, RefreshTokenStrategy } from './strategies';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
 import { RoleGuard } from './guards/role.guard';
+import { LoggerMiddleware } from 'src/middlewares/logger.middleware';
 
 @Module({
   controllers: [AuthController],
@@ -35,4 +36,8 @@ import { RoleGuard } from './guards/role.guard';
   ],
   exports: [AuthService, RoleGuard],
 })
-export class AuthModule {}
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('auth');
+  }
+}
