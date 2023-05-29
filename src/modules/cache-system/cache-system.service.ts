@@ -127,6 +127,9 @@ export class CacheSystemService {
 
   async get(key: string): Promise<any> {
     if (!this.cacheManager) return;
+
+    //
+    this.cacheManager.store.keys();
     if (!key || typeof key === undefined) throw new Error('Key is required');
     return await this.cacheManager.get(key);
   }
@@ -219,7 +222,7 @@ export class CacheSystemService {
     model,
     storeKey,
     exclude,
-    offset = 0,
+    offset,
     limit,
   }: CacheStateProps<T>): Promise<T[] | null> {
     const getOptions = this.options.get(model) ?? {};
@@ -240,10 +243,7 @@ export class CacheSystemService {
       });
     }
 
-    const cacheSize = Math.min(data.length, limit);
-    const cacheData = data.slice(0, cacheSize);
-
-    await this.set(storeKey, data ? data : cacheData, 1000);
+    await this.set(storeKey, data, 1000);
 
     return data;
   }

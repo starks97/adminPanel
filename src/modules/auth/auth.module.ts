@@ -11,7 +11,6 @@ import { JwtStrategy, LocalStrategy, RefreshTokenStrategy } from './strategies';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
 import { RoleGuard } from './guards/role.guard';
-import { LoggerMiddleware } from 'src/middlewares/logger.middleware';
 
 @Module({
   controllers: [AuthController],
@@ -36,8 +35,4 @@ import { LoggerMiddleware } from 'src/middlewares/logger.middleware';
   ],
   exports: [AuthService, RoleGuard],
 })
-export class AuthModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes('auth');
-  }
-}
+export class AuthModule {}

@@ -19,12 +19,15 @@ type ErrorCases =
   | 'post_not_created'
   | 'permission_not_found'
   | 'post_not_found'
-  | 'prisma_error';
+  | 'prisma_error'
+  | 'resource_not_found'
+  | 'resource_not_updated'
+  | 'invalid_limit';
 
 interface IHandler {
   errorType: ErrorType;
   errorCase: ErrorCases;
-  value?: string;
+  value?: string | number;
   prismaError?: Prisma.PrismaClientKnownRequestError;
 }
 

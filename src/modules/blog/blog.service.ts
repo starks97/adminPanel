@@ -89,11 +89,21 @@ export class BlogService {
     limit: number,
   ): Promise<{ posts: Post[]; total: number } | []> {
     try {
-      const cacheKey = `posts_${offset}_${limit}`;
-      const dataCache = await this.cache.get(cacheKey);
+      const limitsValues = [10, 20, 50];
+
+      if (limitsValues.includes(limit) === false) {
+        throw new CustomErrorException({
+          errorCase: 'invalid_limit',
+          errorType: 'Post',
+          value: limit,
+        });
+      }
+      const dataCache = await this.cache.get(`posts:${offset}:${limit}`);
+
       if (dataCache) return dataCache;
+
       const posts = await this.prisma.post.findMany({
-        skip: offset,
+        skip: offset * limit,
         take: limit,
         orderBy: {
           createdAt: 'desc',
@@ -105,7 +115,14 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      await this.cache.set(cacheKey, data, 60);
+      console.log('from DB', data);
+
+      await this.cache.cacheState<Post[]>({
+        model: 'post',
+        storeKey: `posts:${offset}:${limit}`,
+        limit,
+        offset,
+      });
 
       return data || [];
     } catch (e) {
@@ -182,6 +199,8 @@ export class BlogService {
 
       if (!posts) throw new NotFoundException(`Post with query ${q} not found`);
 
+      await this.cache.cacheState<Post[]>({ model: 'post', storeKey: 'posts', limit, offset });
+
       return data;
     } catch (e) {
       console.log(e);
@@ -200,6 +219,8 @@ export class BlogService {
 
   async findPostByCategory(params: SearchPostDto) {
     try {
+      const dataCache = await this.cache.get('post:' + params?.category);
+      if (dataCache) return dataCache;
       const posts = await this.prisma.post.findMany({
         where: {
           OR: [
@@ -217,7 +238,10 @@ export class BlogService {
         },
       });
 
+      if (!posts) throw new NotFoundException(`Post with category ${params?.category} not found`);
       const data = { posts, total: posts.length };
+
+      await this.cache.set('post:' + params?.category, data, 60);
 
       return data;
     } catch (e) {
@@ -252,7 +276,7 @@ export class BlogService {
           value: id,
         });
 
-      //await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
+      await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
     } catch (e) {
       console.log(e);
@@ -282,7 +306,7 @@ export class BlogService {
           value: id,
         });
 
-      //await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
+      await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
     } catch (e) {
       console.log(e);
@@ -317,7 +341,7 @@ export class BlogService {
           value: id,
         });
 
-      //await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
+      await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
     } catch (e) {
       console.log(e);

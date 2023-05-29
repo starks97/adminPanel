@@ -153,7 +153,6 @@ export class AuthService {
     const tokens = await this._createTokens({
       id: userSession.id,
       email: userSession.email,
-      /*role: userSession.role,*/
     });
 
     await this.session.updateSession(userSession.id, tokens.refreshToken);
@@ -174,7 +173,7 @@ export class AuthService {
     const [authToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('SECRET_JWT_KEY'),
-        expiresIn: '1d',
+        expiresIn: '15m',
       }),
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('REFRESH_JWT_KEY'),

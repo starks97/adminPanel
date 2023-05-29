@@ -1,3 +1,4 @@
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import {
   Body,
   Controller,
@@ -48,9 +49,9 @@ export class AuthController {
 
   @Post('/logout')
   async logout(@Res() res: Response, @Req() req: Request) {
-    const user = req.user['id'];
+    const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
 
-    await this.authService.deleteUserSession(user);
+    await this.authService.deleteUserSession(decoded[0]);
 
     res.removeHeader('auth_token');
     res.clearCookie('refresh_token');
@@ -61,9 +62,9 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   @Get('/refresh_token')
   async refreshToken(@Req() req: Request, @Res() res: Response) {
-    const user = req.user['id'];
+    const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
 
-    const response = await this.authService.refreshToken(user, req.cookies.refresh_token);
+    const response = await this.authService.refreshToken(decoded[0], req.cookies.refresh_token);
 
     res.setHeader('auth_token', response);
 

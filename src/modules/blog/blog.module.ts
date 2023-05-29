@@ -10,11 +10,12 @@ import { AuthModule } from '../auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 
 import { CloudinarySystemModule } from './cloudinary/cloudinary-system.module';
+import { ResourcesModule } from './resources/resources.module';
 
 @Module({
   controllers: [BlogController],
   providers: [BlogService, JwtService, LoggerMiddleware],
-  imports: [PrismaModule, CacheSystemModule, AuthModule, CloudinarySystemModule, ConfigModule],
+  imports: [PrismaModule, CacheSystemModule, AuthModule, CloudinarySystemModule, ConfigModule, ResourcesModule],
 })
 export class BlogModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
