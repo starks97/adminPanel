@@ -5,8 +5,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
 
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CustomErrorException } from '../utils';
+import { CustomErrorException, errorCases, PostNotFoundError } from '../utils';
 import { Post, Prisma, Resource } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 
 @Injectable()
 export class BlogService {
@@ -36,7 +37,7 @@ export class BlogService {
         throw new CustomErrorException({
           errorType: 'Post',
           value: 'title',
-          errorCase: 'post_already_exists',
+          errorCase: errorCases.POST_ALREADY_EXISTS,
         });
 
       const post = await this.prisma.post.create({
@@ -61,7 +62,10 @@ export class BlogService {
       });
 
       if (!post)
-        throw new CustomErrorException({ errorCase: 'post_not_created', errorType: 'Post' });
+        throw new CustomErrorException({
+          errorCase: errorCases.POST_NOT_CREATED,
+          errorType: 'Post',
+        });
 
       await this.cache.cacheState<Post>({
         model: 'post',
@@ -71,16 +75,10 @@ export class BlogService {
       return post;
     } catch (e) {
       console.log(e);
-      if (e instanceof CustomErrorException) {
-        throw e;
-      } else {
-        throw new CustomErrorException({
-          errorCase: 'post_not_created',
-          errorType: 'Post',
-          value: e,
-          prismaError: e as Prisma.PrismaClientKnownRequestError,
-        });
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new PostNotFoundError(userId, e);
       }
+      throw e;
     }
   }
 
@@ -89,7 +87,7 @@ export class BlogService {
     limit: number,
   ): Promise<{ posts: Post[]; total: number } | []> {
     try {
-      const limitsValues = [10, 20, 50];
+      /* const limitsValues = [10, 20, 50];
 
       if (limitsValues.includes(limit) === false) {
         throw new CustomErrorException({
@@ -97,7 +95,7 @@ export class BlogService {
           errorType: 'Post',
           value: limit,
         });
-      }
+      }*/
       const dataCache = await this.cache.get(`posts:${offset}:${limit}`);
 
       if (dataCache) return dataCache;
@@ -115,8 +113,6 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      console.log('from DB', data);
-
       await this.cache.cacheState<Post[]>({
         model: 'post',
         storeKey: `posts:${offset}:${limit}`,
@@ -127,16 +123,10 @@ export class BlogService {
       return data || [];
     } catch (e) {
       console.log(e.message);
-      if (e instanceof CustomErrorException) {
-        throw e;
-      } else {
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: e,
-          prismaError: e as Prisma.PrismaClientKnownRequestError,
-        });
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new PostNotFoundError('', e);
       }
+      throw e;
     }
   }
 
@@ -151,23 +141,17 @@ export class BlogService {
         },
       });
 
-      if (!post) throw new NotFoundException(`Post with ID ${id} not found`);
+      if (!post) throw new PostNotFoundError(id);
 
       await this.cache.set('post:' + id, post, 60);
 
       return post;
     } catch (e) {
       console.log(e.message);
-      if (e instanceof CustomErrorException) {
-        throw e;
-      } else {
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: e,
-          prismaError: e as Prisma.PrismaClientKnownRequestError,
-        });
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new PostNotFoundError(id, e);
       }
+      throw e;
     }
   }
 
@@ -197,23 +181,17 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      if (!posts) throw new NotFoundException(`Post with query ${q} not found`);
+      if (!posts) throw new PostNotFoundError(q);
 
       await this.cache.cacheState<Post[]>({ model: 'post', storeKey: 'posts', limit, offset });
 
       return data;
     } catch (e) {
       console.log(e);
-      if (e instanceof CustomErrorException) {
-        throw e;
-      } else {
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: e,
-          prismaError: e as Prisma.PrismaClientKnownRequestError,
-        });
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new PostNotFoundError(q, e);
       }
+      throw e;
     }
   }
 
@@ -246,16 +224,10 @@ export class BlogService {
       return data;
     } catch (e) {
       console.log(e);
-      if (e instanceof CustomErrorException) {
-        throw e;
-      } else {
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: e,
-          prismaError: e as Prisma.PrismaClientKnownRequestError,
-        });
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new PostNotFoundError(params.category, e);
       }
+      throw e;
     }
   }
 
@@ -269,27 +241,16 @@ export class BlogService {
         },
       });
 
-      if (!post)
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: id,
-        });
+      if (!post) throw new PostNotFoundError(id);
 
       await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
     } catch (e) {
       console.log(e);
-      if (e instanceof CustomErrorException) {
-        throw e;
-      } else {
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: e,
-          prismaError: e as Prisma.PrismaClientKnownRequestError,
-        });
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new PostNotFoundError(id, e);
       }
+      throw e;
     }
   }
 
@@ -299,27 +260,16 @@ export class BlogService {
         where: { id },
       });
 
-      if (!post)
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: id,
-        });
+      if (!post) throw new PostNotFoundError(id);
 
       await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
     } catch (e) {
       console.log(e);
-      if (e instanceof CustomErrorException) {
-        throw e;
-      } else {
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: e,
-          prismaError: e as Prisma.PrismaClientKnownRequestError,
-        });
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new PostNotFoundError(id, e);
       }
+      throw e;
     }
   }
 
@@ -334,27 +284,16 @@ export class BlogService {
         },
       });
 
-      if (!post)
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: id,
-        });
+      if (!post) throw new PostNotFoundError(id);
 
       await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
     } catch (e) {
       console.log(e);
-      if (e instanceof CustomErrorException) {
-        throw e;
-      } else {
-        throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: e,
-          prismaError: e as Prisma.PrismaClientKnownRequestError,
-        });
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new PostNotFoundError(id, e);
       }
+      throw e;
     }
   }
 }
