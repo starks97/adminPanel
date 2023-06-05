@@ -10,7 +10,7 @@ export class LoggerMiddleware implements NestMiddleware {
     try {
       const authHeader = req.headers.authorization;
 
-      if (!authHeader) throw new ForbiddenException('No token provided, please login to continue');
+      if (!authHeader) throw new ForbiddenException('Token not provided, please login to continue');
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         try {
@@ -23,9 +23,8 @@ export class LoggerMiddleware implements NestMiddleware {
       }
       next();
     } catch (e) {
-      console.log(e);
       if (e instanceof ForbiddenException) throw e;
-      throw new ForbiddenException('Invalid token provided, please login to continue');
+      throw new ForbiddenException('Invalid token , please login to continue');
     }
   }
 }

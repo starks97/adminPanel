@@ -1,7 +1,7 @@
-import { CloudinarySystemService } from './cloudinary/cloudinary-system.service';
+import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
 import { createPostSchema } from './dto/create-blog.dto';
 import { CacheSystemService } from './../cache-system/cache-system.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpException } from '@nestjs/common';
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
 
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -86,6 +86,9 @@ export class BlogService {
     offset: number,
     limit: number,
   ): Promise<{ posts: Post[]; total: number } | []> {
+    const dataCache = await this.cache.get(`posts:${offset}:${limit}`);
+
+    if (dataCache) return dataCache;
     try {
       /* const limitsValues = [10, 20, 50];
 
@@ -96,9 +99,6 @@ export class BlogService {
           value: limit,
         });
       }*/
-      const dataCache = await this.cache.get(`posts:${offset}:${limit}`);
-
-      if (dataCache) return dataCache;
 
       const posts = await this.prisma.post.findMany({
         skip: offset * limit,
@@ -131,9 +131,9 @@ export class BlogService {
   }
 
   async findPostById(id: string): Promise<Post | CustomErrorException> {
+    const dataCache = await this.cache.get('post:' + id);
+    if (dataCache) return dataCache;
     try {
-      const dataCache = await this.cache.get('post:' + id);
-      if (dataCache) return dataCache;
       const post = await this.prisma.post.findUnique({
         where: { id },
         include: {
@@ -147,9 +147,12 @@ export class BlogService {
 
       return post;
     } catch (e) {
-      console.log(e.message);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new PostNotFoundError(id, e);
+        throw new CustomErrorException({
+          errorCase: errorCases.POST_NOT_FOUND,
+          errorType: 'Post',
+          value: id,
+        });
       }
       throw e;
     }
@@ -225,7 +228,11 @@ export class BlogService {
     } catch (e) {
       console.log(e);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new PostNotFoundError(params.category, e);
+        throw new CustomErrorException({
+          errorCase: errorCases.POST_NOT_FOUND,
+          errorType: 'Post',
+          value: params?.category,
+        });
       }
       throw e;
     }

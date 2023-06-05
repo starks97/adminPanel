@@ -1,3 +1,4 @@
+import { CloudinarySystemModule } from './modules/cloudinary/cloudinary-system.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_PIPE } from '@nestjs/core';
@@ -24,6 +25,7 @@ import { RoleSystemModule } from './modules/role-system/role-system.module';
       isGlobal: true,
     }),
     RoleSystemModule,
+    CloudinarySystemModule,
   ],
 
   providers: [

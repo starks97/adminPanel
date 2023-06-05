@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 
 /**
@@ -70,7 +70,15 @@ export class PassHasherService {
    * - The salt factor of 10 used in this method is a reasonable default value that balances security and performance. Higher values increase security but also increase the time required to hash the password.
    */
   async hashPassword(password: string): Promise<string> {
-    return await bcrypt.hash(password, 10);
+    try {
+      const hashPassword = await bcrypt.hash(password, 10);
+      if (!hashPassword)
+        throw new HttpException('failed_to_hash_password', HttpStatus.INTERNAL_SERVER_ERROR);
+      return hashPassword;
+    } catch (e) {
+      console.log(e.message);
+      throw e;
+    }
   }
 
   /**

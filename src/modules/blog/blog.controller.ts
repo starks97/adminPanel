@@ -1,4 +1,4 @@
-import { CloudinarySystemService } from './cloudinary/cloudinary-system.service';
+import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { SearchPostDto } from './dto/search-post.dto';
 import { JwtAuthGuard } from './../auth/guards/jwt-auth.guard';

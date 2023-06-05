@@ -60,3 +60,18 @@ export class PostNotFoundError extends CustomErrorException {
     });
   }
 }
+
+export class UserErrorHandler extends CustomErrorException {
+  constructor(
+    value?: IHandler['value'],
+    prismaError?: IHandler['prismaError'],
+    errorCase?: IHandler['errorCase'],
+  ) {
+    super({
+      value,
+      errorCase,
+      errorType: 'User',
+      prismaError: prismaError,
+    });
+  }
+}

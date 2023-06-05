@@ -1,13 +1,14 @@
-import { CustomErrorException } from './../utils/handlerError';
+import { CustomErrorException, errorCases, UserErrorHandler } from './../utils/handlerError';
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 
-import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, LoginUserDto, ProfileUserDto, UpdateUserDto } from './dto';
 import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
 import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { PrismaMethods } from 'prisma/context';
+import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
 
 /**
  * # User Service
@@ -101,6 +102,7 @@ export class UserService {
     private readonly prisma: PrismaService,
     private readonly cache: CacheSystemService,
     private readonly passwordHasher: PassHasherService,
+    private readonly cloud: CloudinarySystemService,
   ) {
     this.cache._configModel('user', {
       include: {
@@ -139,55 +141,67 @@ export class UserService {
    *
    * @param {CreateUserDto} createUser - Create User DTO
    *
-   *   ## Returns
-   * @returns {Promise<User | null>} - User or null
-   *
    *   ## Links
    * @see {@link CreateUserDto}
    */
 
-  async createUser(createUser: CreateUserDto): Promise<User | null> {
-    const { email, name, password } = createUser;
+  async createUser(createUser: CreateUserDto) {
+    try {
+      const { email, name, password } = createUser;
 
-    // // check if the user exists in the db
-    const userInDb = await this.prisma.user.findFirst({
-      where: { email },
-    });
+      // // check if the user exists in the db
+      const userInDb = await this.prisma.user.findFirst({
+        where: { email },
+      });
 
-    if (userInDb) {
-      throw new HttpException('user_already_exist', HttpStatus.CONFLICT);
-    }
+      if (userInDb) {
+        throw new HttpException('user_already_exist', HttpStatus.CONFLICT);
+      }
 
-    const hashedPassword = await this.passwordHasher.hashPassword(password);
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-        role: {
-          connectOrCreate: {
-            where: {
-              name: 'PUBLIC',
-            },
-            create: {
-              name: 'PUBLIC',
+      const hashedPassword = await this.passwordHasher.hashPassword(password);
+
+      const user = await this.prisma.user.create({
+        data: {
+          email,
+          name,
+          password: hashedPassword,
+          role: {
+            connectOrCreate: {
+              where: {
+                name: 'PUBLIC',
+              },
+              create: {
+                name: 'PUBLIC',
+              },
             },
           },
         },
-      },
-      include: {
-        sessions: true,
-        role: true,
-      },
-    });
+        include: {
+          sessions: true,
+          role: true,
+        },
+      });
 
-    await this.cache.cacheState<User>({
-      model: 'user',
-      storeKey: 'all_users',
-      exclude: ['password'],
-    });
+      if (!user)
+        throw new CustomErrorException({
+          errorCase: errorCases.USER_NOT_CREATED,
+          errorType: 'User',
+        });
 
-    return user;
+      await this.cache.cacheState<User>({
+        model: 'user',
+        storeKey: 'all_users',
+        exclude: ['password'],
+      });
+
+      return user;
+    } catch (e) {
+      console.log(e);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new UserErrorHandler('user', e, errorCases.USER_NOT_CREATED);
+      }
+      throw e;
+    }
   }
 
   /**
@@ -219,32 +233,37 @@ export class UserService {
    *
    * @param {LoginUserDto} loginUser - Login User DTO
    *
-   *   ## Returns
-   * @returns {User | null} - User or null
-   *
    *   ## Links
    * @see {@link LoginUserDto}
    */
-  async FindByLogin({ email, password }: LoginUserDto): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: {
-        sessions: true,
-        role: true,
-      },
-    });
+  async FindByLogin({ email, password }: LoginUserDto) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        include: {
+          sessions: true,
+          role: true,
+        },
+      });
 
-    if (!user) {
-      throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
+      if (!user) {
+        throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
+      }
+
+      const isVerifiedPassword = await this.passwordHasher.comparePassword(password, user.password);
+
+      if (!isVerifiedPassword) {
+        throw new HttpException('password_not_match', HttpStatus.NOT_FOUND);
+      }
+
+      return user;
+    } catch (e) {
+      console.log(e);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new UserErrorHandler('user', e, errorCases.USER_NOT_FOUND);
+      }
+      throw e;
     }
-
-    const isVerifiedPassword = await this.passwordHasher.comparePassword(password, user.password);
-
-    if (!isVerifiedPassword) {
-      throw new HttpException('password_not_match', HttpStatus.NOT_FOUND);
-    }
-
-    return user;
   }
 
   /**
@@ -275,9 +294,7 @@ export class UserService {
   async FindUserById(id: string): Promise<User | null> {
     const dataCache = await this.cache.get('user:' + id);
 
-    if (dataCache) {
-      return dataCache;
-    }
+    if (dataCache) return dataCache;
 
     try {
       const user = await this.prisma.user.findUnique({
@@ -299,12 +316,9 @@ export class UserService {
       return user;
     } catch (e) {
       console.error(e);
-      throw new CustomErrorException({
-        errorCase: 'user_not_found',
-        errorType: 'User',
-        value: id,
-        prismaError: e as Prisma.PrismaClientKnownRequestError,
-      });
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new UserErrorHandler('user', e, errorCases.USER_NOT_FOUND);
+      }
     }
   }
 
@@ -332,45 +346,58 @@ export class UserService {
    *
    * @param {string} q - Query string
    *
-   *   ## Returns
-   * @returns {User} User
-   *
    *   ## Exceptions
    * @throws {HttpException} User_not_found - User not found
    */
 
-  async FindUserByEmailorName(q: string) {
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          {
-            email: {
-              contains: q,
-            },
-          },
-          {
-            name: {
-              contains: q,
-            },
-          },
-        ],
-      },
+  async FindUserByName(q: string, offset: number, limit: number) {
+    const dataCache = await this.cache.get('all_users');
 
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        sessions: true,
-      },
-    });
+    if (dataCache) return dataCache;
+    try {
+      const user = await this.prisma.user.findMany({
+        where: {
+          OR: [
+            {
+              name: {
+                contains: q,
+              },
+            },
+          ],
+        },
+        skip: offset,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          createdAt: true,
+          sessions: true,
+        },
+      });
 
-    if (!user) {
-      throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
+      if (!user) {
+        throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
+      }
+
+      const data = { users: user, total: user.length };
+
+      await this.cache.cacheState<User>({
+        model: 'user',
+        storeKey: 'all_users',
+        exclude: ['password'],
+      });
+
+      return data;
+    } catch (e) {
+      console.log(e);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new UserErrorHandler('user', e, errorCases.USER_NOT_FOUND);
+      }
+
+      throw e;
     }
-
-    return user;
   }
 
   /**
@@ -394,35 +421,45 @@ export class UserService {
    *
    *   ## Returns
    *
-   * @returns {Promise<User[]>} - Array of users
+   * @returns {Promise<{users: User[] | total: number}>} - Array of users and total number of users
    */
 
-  async FindAllUsers() {
+  async FindAllUsers(
+    offset: number,
+    limit: number,
+  ): Promise<{ users: User[]; total: number } | []> {
     const dataCache = await this.cache.get('all_users');
 
     if (dataCache) return dataCache;
+    try {
+      const users = await this.prisma.user.findMany({
+        skip: offset,
+        take: limit,
+        include: {
+          sessions: true,
+          role: true,
+        },
+      });
 
-    const users = await this.prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-        updatedAt: true,
-        sessions: true,
-        role: true,
-      },
-      skip: 0,
-      take: 10,
-    });
+      users.forEach(user => {
+        delete user.password;
+      });
 
-    await this.cache.cacheState<User>({
-      model: 'user',
-      storeKey: 'all_users',
-      exclude: ['password'],
-    });
+      const data = { users, total: users.length };
 
-    return users || [];
+      await this.cache.cacheState<User>({
+        model: 'user',
+        storeKey: 'all_users',
+        exclude: ['password'],
+      });
+
+      return data || [];
+    } catch (e) {
+      console.log(e);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new UserErrorHandler('users', e);
+      }
+    }
   }
 
   /**
@@ -467,50 +504,64 @@ export class UserService {
    */
 
   async AssignRoleToUser(userId: string, roleName: string) {
-    return await this.prisma.$transaction(async ctx => {
-      const user = await ctx.user.findUnique({
-        where: {
-          id: userId,
-        },
-        include: {
-          role: true,
-        },
-      });
+    try {
+      return await this.prisma.$transaction(async ctx => {
+        const user = await ctx.user.findUnique({
+          where: {
+            id: userId,
+          },
+          include: {
+            role: true,
+          },
+        });
 
-      if (!user) throw new HttpException(`${userId} user_not_found`, HttpStatus.NOT_FOUND);
+        if (!user) throw new UserErrorHandler('user', null, errorCases.USER_NOT_FOUND);
 
-      const role = await ctx.role.findUnique({
-        where: {
-          name: roleName,
-        },
-      });
+        const role = await ctx.role.findUnique({
+          where: {
+            name: roleName,
+          },
+        });
 
-      if (!role)
-        throw new HttpException(`role ${roleName} was not founded correctly`, HttpStatus.NOT_FOUND);
+        if (!role)
+          throw new HttpException(
+            `role ${roleName} was not founded correctly`,
+            HttpStatus.NOT_FOUND,
+          );
 
-      const updatedUser = await ctx.user.update({
-        where: {
-          id: userId,
-        },
-        data: {
-          role: {
-            connect: {
-              name: role.name,
+        const updatedUser = await ctx.user.update({
+          where: {
+            id: userId,
+          },
+          data: {
+            role: {
+              connect: {
+                name: role.name,
+              },
             },
           },
-        },
-        include: {
-          role: true,
-        },
-      });
-      await this.cache.cacheState<User>({
-        model: 'user',
-        storeKey: 'all_users',
-        exclude: ['password'],
-      });
+          include: {
+            role: true,
+          },
+        });
+        await this.cache.cacheState<User>({
+          model: 'user',
+          storeKey: 'all_users',
+          exclude: ['password'],
+        });
 
-      return updatedUser;
-    });
+        return updatedUser;
+      });
+    } catch (e) {
+      console.error(e.message);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomErrorException({
+          errorCase: errorCases.USER_NOT_FOUND || errorCases.ROLE_NOT_FOUND,
+          value: userId || roleName,
+          errorType: 'User',
+        });
+      }
+    }
   }
 
   /**
@@ -545,16 +596,31 @@ export class UserService {
    */
 
   async DeleteUser(id: string) {
-    this.FindUserById(id);
-    const deletedUser = await this.prisma.user.delete({
-      where: { id },
-    });
+    try {
+      const deletedUser = await this.prisma.user.delete({
+        where: { id },
+      });
 
-    if (!deletedUser) throw new HttpException('user_not_deleted', HttpStatus.NOT_FOUND);
+      if (!deletedUser)
+        throw new CustomErrorException({
+          errorCase: errorCases.USER_NOT_DELETED,
+          value: id,
+          errorType: 'User',
+        });
 
-    await this.cache.cacheState<User>({ model: 'user', storeKey: 'all_users' });
+      await this.cache.cacheState<User>({ model: 'user', storeKey: 'all_users' });
 
-    return deletedUser;
+      return deletedUser;
+    } catch (e) {
+      console.log(e.message);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomErrorException({
+          errorCase: errorCases.USER_NOT_DELETED,
+          value: id,
+          errorType: 'User',
+        });
+      }
+    }
   }
 
   /**
@@ -591,28 +657,44 @@ export class UserService {
    */
 
   async UpdateUserPassword(id: string, pass: UpdateUserPasswordDto) {
-    const newUserPassword = await this.prisma.user.update({
-      where: { id },
-      data: {
-        password: pass
-          ? await this.passwordHasher.hashPassword(pass?.password as string)
-          : undefined,
-        updatedAt: new Date(),
-      },
-      include: {
-        sessions: true,
-      },
-    });
+    try {
+      const newUserPassword = await this.prisma.user.update({
+        where: { id },
+        data: {
+          password: pass
+            ? await this.passwordHasher.hashPassword(pass?.password as string)
+            : undefined,
+          updatedAt: new Date(),
+        },
+        include: {
+          sessions: true,
+        },
+      });
 
-    if (!newUserPassword) throw new HttpException('user_not_updated', HttpStatus.NOT_FOUND);
+      if (!newUserPassword)
+        throw new CustomErrorException({
+          errorCase: errorCases.USER_NOT_UPDATED,
+          value: id,
+          errorType: 'User',
+        });
 
-    await this.cache.cacheState<User>({
-      model: 'user',
-      storeKey: 'all_users',
-      exclude: ['password'],
-    });
+      await this.cache.cacheState<User>({
+        model: 'user',
+        storeKey: 'all_users',
+        exclude: ['password'],
+      });
 
-    return newUserPassword;
+      return newUserPassword;
+    } catch (e) {
+      console.log(e.message);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomErrorException({
+          errorCase: errorCases.USER_NOT_UPDATED,
+          value: id,
+          errorType: 'User',
+        });
+      }
+    }
   }
 
   /**
@@ -650,17 +732,69 @@ export class UserService {
     const dataCache = await this.cache.get('user:' + email);
 
     if (dataCache) return dataCache;
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
 
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
+      if (!user)
+        throw new CustomErrorException({
+          errorCase: errorCases.USER_NOT_FOUND,
+          value: email,
+          errorType: 'User',
+        });
 
-    if (!user) throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
+      delete user.password;
 
-    delete user.password;
+      await this.cache.set('user:' + email, user, 60);
 
-    await this.cache.set('user:' + email, user, 60);
+      return user;
+    } catch (e) {
+      console.log(e.message);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomErrorException({
+          errorCase: errorCases.USER_NOT_FOUND,
+          value: email,
+          errorType: 'User',
+        });
+      }
+      throw e;
+    }
+  }
 
-    return user;
+  async createUserProfile(file: Express.Multer.File, profile: ProfileUserDto, id: string) {
+    try {
+      const cloud = await this.cloud.uploadSingle(file);
+
+      const { bio, birthday, lastName } = profile;
+
+      const user = await this.prisma.user.update({
+        where: { id },
+        data: {
+          bio,
+          birthday,
+          lastName,
+          image: cloud.url,
+        },
+      });
+
+      if (!user)
+        throw new CustomErrorException({
+          errorCase: 'User_profile_not_created',
+          value: id,
+          errorType: 'User',
+        });
+
+      return user;
+    } catch (e) {
+      console.log(e.message);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomErrorException({
+          errorCase: 'User_profile_not_created',
+          value: id,
+          errorType: 'User',
+        });
+      }
+    }
   }
 }
