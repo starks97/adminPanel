@@ -1,13 +1,13 @@
 import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
-import { createPostSchema } from './dto/create-blog.dto';
 import { CacheSystemService } from './../cache-system/cache-system.service';
 import { Injectable, NotFoundException, HttpException } from '@nestjs/common';
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
 
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CustomErrorException, errorCases, PostNotFoundError } from '../utils';
-import { Post, Prisma, Resource } from '@prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import { Post, Prisma } from '@prisma/client';
+
+import { ResourcesService } from './resources/resources.service';
 
 @Injectable()
 export class BlogService {
@@ -15,6 +15,7 @@ export class BlogService {
     private readonly prisma: PrismaService,
     private readonly cache: CacheSystemService,
     private readonly cloudinary: CloudinarySystemService,
+    private readonly resource: ResourcesService,
   ) {}
 
   async createPost(
@@ -199,9 +200,9 @@ export class BlogService {
   }
 
   async findPostByCategory(params: SearchPostDto) {
+    const cacheKey = `post:${params?.category}:${params?.offset}:${params?.limit}`;
+
     try {
-      const dataCache = await this.cache.get('post:' + params?.category);
-      if (dataCache) return dataCache;
       const posts = await this.prisma.post.findMany({
         where: {
           OR: [
@@ -222,7 +223,7 @@ export class BlogService {
       if (!posts) throw new NotFoundException(`Post with category ${params?.category} not found`);
       const data = { posts, total: posts.length };
 
-      await this.cache.set('post:' + params?.category, data, 60);
+      await this.cache.set(cacheKey, data, 60);
 
       return data;
     } catch (e) {
@@ -238,7 +239,7 @@ export class BlogService {
     }
   }
 
-  async updatePost(id: string, updatePostDto: UpdatePostDto) {
+  async updatePost(id: string, updatePostDto: UpdatePostDto, files: Array<Express.Multer.File>) {
     try {
       const post = await this.prisma.post.update({
         where: { id },
@@ -249,6 +250,8 @@ export class BlogService {
       });
 
       if (!post) throw new PostNotFoundError(id);
+
+      await this.resource.updateResource(id, files);
 
       await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
@@ -265,30 +268,6 @@ export class BlogService {
     try {
       const post = await this.prisma.post.delete({
         where: { id },
-      });
-
-      if (!post) throw new PostNotFoundError(id);
-
-      await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
-      return post;
-    } catch (e) {
-      console.log(e);
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new PostNotFoundError(id, e);
-      }
-      throw e;
-    }
-  }
-
-  async updateResources(id: string, resources: Resource[]) {
-    try {
-      const post = await this.prisma.post.update({
-        where: { id },
-        data: {
-          resources: {
-            create: resources,
-          },
-        },
       });
 
       if (!post) throw new PostNotFoundError(id);

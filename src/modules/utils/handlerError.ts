@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-type ErrorType = 'User' | 'Role' | 'Permission' | 'RoleSystem' | 'Post' | 'Other';
+type ErrorType = 'User' | 'Role' | 'Permission' | 'RoleSystem' | 'Post' | 'Other' | 'Resource';
 
 export const errorCases = {
   USER_NOT_UPDATED: 'user_not_updated',

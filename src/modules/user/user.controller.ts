@@ -26,12 +26,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('user')
 @Controller('user')
+@UseGuards(JwtAuthGuard)
+@UseGuards(RoleGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @UseGuards(JwtAuthGuard)
-  @Permission(['UPDATE', 'DELETE'])
-  @UseGuards(RoleGuard)
+  @Permission(['UPDATE'])
   @Get('/users')
   async findUserByQueries(
     @Query('offset') offset: string,
@@ -50,10 +50,7 @@ export class UserController {
     const response = await this.userService.FindAllUsers(userOffset, userLimit);
     return res.status(200).json({ message: 'Users found successfully', data: response });
   }
-
-  @UseGuards(JwtAuthGuard)
-  @Permission(['UPDATE', 'DELETE'])
-  @UseGuards(RoleGuard)
+  @Permission(['UPDATE'])
   @Post('/:id')
   async AssignRoleToUser(
     @Param('id') id: string,
@@ -64,18 +61,12 @@ export class UserController {
 
     return res.status(200).json({ message: 'role_assigned', data: response.id });
   }
-
-  @UseGuards(JwtAuthGuard)
   @Permission(['UPDATE'])
-  @UseGuards(RoleGuard)
   @Get('/:id')
   findUserById(@Param('id') id: string) {
     return this.userService.FindUserById(id);
   }
-
-  @UseGuards(JwtAuthGuard)
   @Permission(['UPDATE'])
-  @UseGuards(RoleGuard)
   @Patch('/:id')
   async updatePasswordUser(
     @Param('id') id: string,
@@ -86,31 +77,23 @@ export class UserController {
 
     return res.status(200).json({ message: 'user_updated', data: response.id });
   }
-
-  @UseGuards(JwtAuthGuard)
-  @Permission(['UPDATE'])
-  @UseGuards(RoleGuard)
+  @Permission(['DELETE'])
   @Delete('/:id')
   async removeUser(@Param('id') id: string, @Res() res: Response) {
     const response = await this.userService.DeleteUser(id);
 
     return res.status(200).json({ message: 'user_deleted', data: response.id });
   }
-
-  @UseGuards(JwtAuthGuard)
   @Permission(['CREATE'])
-  @UseGuards(RoleGuard)
   @UseInterceptors(FileInterceptor('file'))
-  @Post('/profile')
+  @Patch('/create_profile/:id')
   async userProfile(
     @UploadedFile() file: Express.Multer.File,
-    dataProfile: ProfileUserDto,
+    @Body() dataProfile: ProfileUserDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Param('id') id: string,
   ) {
-    const userId = req.user['id'];
-
-    const response = await this.userService.createUserProfile(file, dataProfile, userId);
+    const response = await this.userService.createUserProfile(dataProfile, id, file);
 
     return res.status(200).json({ message: 'user_profile_created', data: response });
   }

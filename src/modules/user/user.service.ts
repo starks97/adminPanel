@@ -762,9 +762,9 @@ export class UserService {
     }
   }
 
-  async createUserProfile(file: Express.Multer.File, profile: ProfileUserDto, id: string) {
+  async createUserProfile(profile: ProfileUserDto, id: string, file?: Express.Multer.File) {
     try {
-      const cloud = await this.cloud.uploadSingle(file);
+      const cloud = !file ? undefined : await this.cloud.uploadSingle(file);
 
       const { bio, birthday, lastName } = profile;
 

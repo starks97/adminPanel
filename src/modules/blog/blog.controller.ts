@@ -31,7 +31,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @Permission(['CREATE'])
   @UseGuards(RoleGuard)
   @UseInterceptors(FilesInterceptor('files'))
@@ -94,13 +94,15 @@ export class BlogController {
   @UseGuards(JwtAuthGuard)
   @Permission(['UPDATE'])
   @UseGuards(RoleGuard)
+  @UseInterceptors(FilesInterceptor('files'))
   @Patch('/post/:id')
   async update(
     @Param('id') id: string,
     @Body() updateBlogDto: UpdatePostDto,
+    @UploadedFiles() files: Array<Express.Multer.File>,
     @Res() res: Response,
   ) {
-    const response = await this.blogService.updatePost(id, updateBlogDto);
+    const response = await this.blogService.updatePost(id, updateBlogDto, files);
 
     return res.status(200).json({ message: 'Post updated successfully', response });
   }
