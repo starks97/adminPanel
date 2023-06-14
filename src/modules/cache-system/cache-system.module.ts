@@ -1,16 +1,16 @@
-import { CACHE_MANAGER, CacheModule, Module } from '@nestjs/common';
-import * as redisStore from 'cache-manager-redis-store';
+import { Module } from '@nestjs/common';
+import { DEFAULT_REDIS_NAMESPACE, RedisModule } from '@liaoliaots/nestjs-redis';
 
 import { CacheSystemService } from './cache-system.service';
 import { PrismaModule } from '../../../prisma/prisma.module';
 
 @Module({
   imports: [
-    CacheModule.register({
-      store: redisStore,
-      host: 'localhost',
-      port: 6379,
-      ttl: 180,
+    RedisModule.forRoot({
+      readyLog: true,
+      config: {
+        namespace: DEFAULT_REDIS_NAMESPACE,
+      },
     }),
     PrismaModule,
   ],

@@ -291,7 +291,7 @@ export class UserService {
    * @param {string} id - User Id
    */
 
-  async FindUserById(id: string): Promise<User | null> {
+  async FindUserById(id: string) {
     const dataCache = await this.cache.get('user:' + id);
 
     if (dataCache) return dataCache;
@@ -424,13 +424,17 @@ export class UserService {
    * @returns {Promise<{users: User[] | total: number}>} - Array of users and total number of users
    */
 
-  async FindAllUsers(
-    offset: number,
-    limit: number,
-  ): Promise<{ users: User[]; total: number } | []> {
-    const dataCache = await this.cache.get('all_users');
+  async FindAllUsers(offset: number, limit: number) {
+    const dataCache = await this.cache.cachePagination('users', offset, limit, 'users');
 
-    if (dataCache) return dataCache;
+    const dataWithoutCache = JSON.parse(await this.cache.get(`users:${offset}:${limit}`));
+
+    if (!dataCache) {
+      if (dataWithoutCache) return { users: dataWithoutCache, total: dataWithoutCache.length };
+    } else {
+      return { users: dataCache, total: dataCache.length };
+    }
+
     try {
       const users = await this.prisma.user.findMany({
         skip: offset,
@@ -447,11 +451,7 @@ export class UserService {
 
       const data = { users, total: users.length };
 
-      await this.cache.cacheState<User>({
-        model: 'user',
-        storeKey: 'all_users',
-        exclude: ['password'],
-      });
+      await this.cache.set(`users:${offset}:${limit}`, JSON.stringify(users), 60);
 
       return data || [];
     } catch (e) {
@@ -544,9 +544,10 @@ export class UserService {
             role: true,
           },
         });
+
         await this.cache.cacheState<User>({
           model: 'user',
-          storeKey: 'all_users',
+          storeKey: 'users',
           exclude: ['password'],
         });
 
@@ -607,8 +608,6 @@ export class UserService {
           value: id,
           errorType: 'User',
         });
-
-      await this.cache.cacheState<User>({ model: 'user', storeKey: 'all_users' });
 
       return deletedUser;
     } catch (e) {
@@ -728,7 +727,7 @@ export class UserService {
    * @throws {HttpException} User_not_found - User not found *
    */
 
-  async findUserByEmail(email: string): Promise<User | null> {
+  async findUserByEmail(email: string) {
     const dataCache = await this.cache.get('user:' + email);
 
     if (dataCache) return dataCache;
@@ -763,9 +762,11 @@ export class UserService {
   }
 
   async createUserProfile(profile: ProfileUserDto, id: string, file?: Express.Multer.File) {
-    try {
-      const cloud = !file ? undefined : await this.cloud.uploadSingle(file);
+    const cloud = !file ? undefined : await this.cloud.uploadSingle(file);
 
+    console.log('entry to profile');
+    try {
+      console.log('profile');
       const { bio, birthday, lastName } = profile;
 
       const user = await this.prisma.user.update({
@@ -774,9 +775,10 @@ export class UserService {
           bio,
           birthday,
           lastName,
-          image: cloud.url,
         },
       });
+
+      console.log('update from service', user);
 
       if (!user)
         throw new CustomErrorException({
@@ -785,16 +787,21 @@ export class UserService {
           errorType: 'User',
         });
 
+      /*await this.cache.cacheState({
+        model: 'user',
+        storeKey: 'users',
+        exclude: ['password'],
+      });*/
       return user;
     } catch (e) {
-      console.log(e.message);
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+      console.log(e);
+      /*if (e instanceof Prisma.PrismaClientKnownRequestError) {
         throw new CustomErrorException({
           errorCase: 'User_profile_not_created',
           value: id,
           errorType: 'User',
         });
-      }
+      }*/
     }
   }
 }

@@ -83,24 +83,19 @@ export class BlogService {
     }
   }
 
-  async findAllPosts(
-    offset: number,
-    limit: number,
-  ): Promise<{ posts: Post[]; total: number } | []> {
-    const dataCache = await this.cache.get(`posts:${offset}:${limit}`);
+  async findAllPosts(offset: number, limit: number) {
+    const dataWhithout = JSON.parse(await this.cache.get(`posts:${offset}:${limit}`));
 
-    if (dataCache) return dataCache;
+    const dataFromCacheShield = await this.cache.cachePagination('posts', offset, limit, 'post');
+
+    if (!dataFromCacheShield) {
+      if (dataWhithout) return dataWhithout;
+    } else {
+      return dataFromCacheShield;
+    }
+
+    //if (dataCache) return { posts: JSON.parse(dataCache), total: JSON.parse(dataCache).length };
     try {
-      /* const limitsValues = [10, 20, 50];
-
-      if (limitsValues.includes(limit) === false) {
-        throw new CustomErrorException({
-          errorCase: 'invalid_limit',
-          errorType: 'Post',
-          value: limit,
-        });
-      }*/
-
       const posts = await this.prisma.post.findMany({
         skip: offset * limit,
         take: limit,
@@ -114,12 +109,9 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      await this.cache.cacheState<Post[]>({
-        model: 'post',
-        storeKey: `posts:${offset}:${limit}`,
-        limit,
-        offset,
-      });
+      await this.cache.set(`post:${offset}:${limit}`, JSON.stringify(data), 1000);
+
+      //await this.cache.cacheState<Post>({ model: 'post', storeKey: `posts:${offset}:${limit}` });
 
       return data || [];
     } catch (e) {
@@ -131,7 +123,7 @@ export class BlogService {
     }
   }
 
-  async findPostById(id: string): Promise<Post | CustomErrorException> {
+  async findPostById(id: string) {
     const dataCache = await this.cache.get('post:' + id);
     if (dataCache) return dataCache;
     try {
@@ -187,7 +179,7 @@ export class BlogService {
 
       if (!posts) throw new PostNotFoundError(q);
 
-      await this.cache.cacheState<Post[]>({ model: 'post', storeKey: 'posts', limit, offset });
+      await this.cache.cacheState<Post[]>({ model: 'post', storeKey: 'posts' });
 
       return data;
     } catch (e) {

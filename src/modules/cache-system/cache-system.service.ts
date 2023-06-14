@@ -1,17 +1,16 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { Cache } from 'cache-manager';
+import { RedisService, DEFAULT_REDIS_NAMESPACE, InjectRedis } from '@liaoliaots/nestjs-redis';
 
 import { PrismaService } from '../../../prisma/prisma.service';
+import Redis from 'ioredis';
 
 type T_KEYS<T> = keyof T;
 
-interface CacheStateProps<T> {
+export interface CacheStateProps<T> {
   model: Uncapitalize<Prisma.ModelName>;
   storeKey: string;
   exclude?: T_KEYS<T>[];
-  offset?: number;
-  limit?: number;
 }
 
 /**
@@ -85,11 +84,11 @@ export class CacheSystemService {
    */
 
   options = new Map<string, any>();
+  private readonly redis: Redis;
 
-  constructor(
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly cache: RedisService, private readonly prisma: PrismaService) {
+    this.redis = this.cache.getClient(DEFAULT_REDIS_NAMESPACE);
+  }
 
   /**
    * # Get Cache!
@@ -125,13 +124,10 @@ export class CacheSystemService {
    * @note Cached data is stored in memory and will be lost if the application is restarted.
    */
 
-  async get(key: string): Promise<any> {
-    if (!this.cacheManager) return;
-
-    //
-    this.cacheManager.store.keys();
+  async get(key: string) {
+    if (!this.cache) return;
     if (!key || typeof key === undefined) throw new Error('Key is required');
-    return await this.cacheManager.get(key);
+    return await this.redis.get(key);
   }
 
   /**
@@ -173,7 +169,7 @@ export class CacheSystemService {
 
     if (!ttl) throw new Error('TTL is required');
 
-    return await this.cacheManager.set(key, value, ttl);
+    return await this.redis.set(key, value, 'EX', ttl);
   }
 
   /**
@@ -218,19 +214,11 @@ export class CacheSystemService {
    * - Cached data is stored in memory and will be lost if the application is restarted.
    */
 
-  async cacheState<T>({
-    model,
-    storeKey,
-    exclude,
-    offset,
-    limit,
-  }: CacheStateProps<T>): Promise<T[] | null> {
+  async cacheState<T>({ model, storeKey, exclude }: CacheStateProps<T>) {
     const getOptions = this.options.get(model) ?? {};
 
     const data: T[] = await (this.prisma as any)[model].findMany({
       ...getOptions,
-      skip: offset,
-      take: limit,
     });
 
     if (!data) return null;
@@ -242,8 +230,11 @@ export class CacheSystemService {
         });
       });
     }
+    const redisData = JSON.stringify(data);
 
-    await this.set(storeKey, data, 1000);
+    await this.set(storeKey, redisData, 600);
+
+    console.log('Data from DB cache');
 
     return data;
   }
@@ -279,5 +270,30 @@ export class CacheSystemService {
 
   _configModel(model: Uncapitalize<Prisma.ModelName>, options: any) {
     this.options.set(model, options);
+  }
+
+  async cachePagination(storeKey: string, offset: number, limit: number, new_key: string) {
+    const dataString = JSON.parse(await this.redis.get(`${new_key}:${offset}:${limit}`));
+
+    if (dataString) return dataString;
+
+    try {
+      const data = await this.get(storeKey);
+
+      if (!data) return null;
+
+      const dataArray = JSON.parse(data);
+      const newData = dataArray.slice(offset, limit);
+
+      await this.set(`${new_key}:${offset}:${limit}`, JSON.stringify(newData), 60);
+
+      return newData;
+    } catch (e) {
+      console.log('error from cachePagination', e);
+    }
+  }
+
+  async cacheValidation(key: string) {
+    return await this.redis.del(key);
   }
 }

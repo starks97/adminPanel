@@ -1,5 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 
 import { BlogController } from './blog.controller';
 import { BlogService } from './blog.service';
@@ -11,6 +11,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { CloudinarySystemModule } from '../cloudinary/cloudinary-system.module';
 import { ResourcesModule } from './resources/resources.module';
+import { CacheShieldMiddleware } from 'src/middlewares/cacheShield.midddleware';
 
 @Module({
   controllers: [BlogController],
@@ -27,5 +28,6 @@ import { ResourcesModule } from './resources/resources.module';
 export class BlogModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(LoggerMiddleware).forRoutes('blog');
+    consumer.apply(CacheShieldMiddleware).exclude({ path: 'blog', method: RequestMethod.GET });
   }
 }
