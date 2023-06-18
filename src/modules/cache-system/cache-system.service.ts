@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { RedisService, DEFAULT_REDIS_NAMESPACE, InjectRedis } from '@liaoliaots/nestjs-redis';
 
@@ -11,6 +11,12 @@ export interface CacheStateProps<T> {
   model: Uncapitalize<Prisma.ModelName>;
   storeKey: string;
   exclude?: T_KEYS<T>[];
+}
+
+export interface CachePagProps<T> extends Omit<CacheStateProps<T>, 'model' | 'exclude'> {
+  newKey: string;
+  offset: number;
+  limit: number;
 }
 
 /**
@@ -201,8 +207,6 @@ export class CacheSystemService {
    *
    *   - StoreKey: A string representing the key to use when caching the data.
    *   - Exclude: An array of strings representing the keys to exclude from the cached data.
-   *   - Offset: A number representing the offset to use when retrieving data from the Prisma model.
-   *   - Limit: A number representing the limit to use when retrieving data from the Prisma model.
    *
    *   ## Returns
    * @returns An array of objects representing the data retrieved from the Prisma model, or
@@ -233,8 +237,6 @@ export class CacheSystemService {
     const redisData = JSON.stringify(data);
 
     await this.set(storeKey, redisData, 600);
-
-    console.log('Data from DB cache');
 
     return data;
   }
@@ -272,8 +274,8 @@ export class CacheSystemService {
     this.options.set(model, options);
   }
 
-  async cachePagination(storeKey: string, offset: number, limit: number, new_key: string) {
-    const dataString = JSON.parse(await this.redis.get(`${new_key}:${offset}:${limit}`));
+  async cachePagination<T>({ limit, newKey, storeKey, offset }: CachePagProps<T>) {
+    const dataString = JSON.parse(await this.redis.get(`${newKey}:${offset}:${limit}`));
 
     if (dataString) return dataString;
 
@@ -285,15 +287,36 @@ export class CacheSystemService {
       const dataArray = JSON.parse(data);
       const newData = dataArray.slice(offset, limit);
 
-      await this.set(`${new_key}:${offset}:${limit}`, JSON.stringify(newData), 60);
+      await this.set(`${newKey}:${offset}:${limit}`, JSON.stringify(newData), 60);
 
       return newData;
     } catch (e) {
       console.log('error from cachePagination', e);
+      throw new HttpException(
+        'Failed to retrieve or cache pagination data',
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  async cacheValidation(key: string) {
-    return await this.redis.del(key);
+  async cacheInValidation(pattern: string) {
+    if (!pattern)
+      throw new HttpException(
+        'pattern was not provided, please provide the pattern of keys',
+        HttpStatus.NOT_ACCEPTABLE,
+      );
+
+    try {
+      const keys = await this.redis.keys(pattern);
+      if (keys.length === 0) return false;
+
+      const deleteKeys = await this.redis.del(...keys);
+      if (deleteKeys !== keys.length) return false;
+
+      return true;
+    } catch (e) {
+      console.log('error from cacheInValidation', e);
+      throw new HttpException('error deleting keys', HttpStatus.BAD_REQUEST);
+    }
   }
 }

@@ -93,10 +93,7 @@ export class UserController {
     @Res() res: Response,
     @Param('id') id: string,
   ) {
-    console.log('executing');
     const response = await this.userService.createUserProfile(dataProfile, id, file);
-
-    console.log('from controller', response);
 
     return res.status(200).json({ message: 'user_profile_created', data: response });
   }

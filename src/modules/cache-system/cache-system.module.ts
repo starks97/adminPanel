@@ -10,6 +10,7 @@ import { PrismaModule } from '../../../prisma/prisma.module';
       readyLog: true,
       config: {
         namespace: DEFAULT_REDIS_NAMESPACE,
+        maxRetriesPerRequest: 3,
       },
     }),
     PrismaModule,

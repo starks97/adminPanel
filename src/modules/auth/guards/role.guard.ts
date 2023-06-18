@@ -59,7 +59,7 @@ export class RoleGuard implements CanActivate {
 
       if (!checkPermission)
         throw new CustomErrorException({
-          errorType: 'Permission',
+          errorType: 'User',
           errorCase: 'user_without_enough_permission',
           value: user.id,
         });

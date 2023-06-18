@@ -8,29 +8,21 @@ export class CacheShieldMiddleware implements NestMiddleware {
   constructor(private readonly cache: CacheSystemService) {}
   async use(req: Request, res: Response, next: NextFunction) {
     try {
-      const { method, originalUrl } = req;
-
-      const endpoint = originalUrl.split('/')[1];
+      const { method, baseUrl } = req;
 
       await next();
 
-      if (['PATCH', 'CREATE', 'DELETE'].includes(method)) {
-        let cacheConfig;
-        if (endpoint === 'user') {
-          cacheConfig = {
-            model: 'user',
-            storeKey: 'users',
-            exclude: ['password'],
-          };
-        } else if (endpoint === 'post') {
-          cacheConfig = {
-            model: 'post',
-            storeKey: 'posts',
-            exclude: ['secretField'],
-          };
-        }
+      const cacheMethods = {
+        methods: ['PATCH', 'DELETE', 'POST', 'PUT'],
+        path: baseUrl.split('/')[1],
+      };
 
-        if (cacheConfig) return await this.cache.cacheState(cacheConfig);
+      if (cacheMethods.methods.includes(method)) {
+        const res = this.cache.cacheInValidation(`*${cacheMethods.path}*`);
+
+        if (!res) return false;
+
+        return res;
       }
     } catch (e) {
       throw new ForbiddenException(e.message);

@@ -86,13 +86,13 @@ export class BlogService {
   async findAllPosts(offset: number, limit: number) {
     const dataWhithout = JSON.parse(await this.cache.get(`posts:${offset}:${limit}`));
 
-    const dataFromCacheShield = await this.cache.cachePagination('posts', offset, limit, 'post');
+    //const dataFromCacheShield = await this.cache.cachePagination('posts', offset, limit, 'post');
 
-    if (!dataFromCacheShield) {
+    /*if (!dataFromCacheShield) {
       if (dataWhithout) return dataWhithout;
     } else {
       return dataFromCacheShield;
-    }
+    }*/
 
     //if (dataCache) return { posts: JSON.parse(dataCache), total: JSON.parse(dataCache).length };
     try {
