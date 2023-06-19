@@ -84,7 +84,7 @@ export class BlogService {
   }
 
   async findAllPosts(offset: number, limit: number) {
-    const dataWhithout = JSON.parse(await this.cache.get(`posts:${offset}:${limit}`));
+    const dataWhithout = JSON.parse(await this.cache.get(`blog:${offset}:${limit}`));
 
     //const dataFromCacheShield = await this.cache.cachePagination('posts', offset, limit, 'post');
 
@@ -109,9 +109,7 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      await this.cache.set(`post:${offset}:${limit}`, JSON.stringify(data), 1000);
-
-      //await this.cache.cacheState<Post>({ model: 'post', storeKey: `posts:${offset}:${limit}` });
+      await this.cache.set(`blog:${offset}:${limit}`, JSON.stringify(data), 60);
 
       return data || [];
     } catch (e) {
@@ -124,7 +122,7 @@ export class BlogService {
   }
 
   async findPostById(id: string) {
-    const dataCache = await this.cache.get('post:' + id);
+    const dataCache = JSON.parse(await this.cache.get('blog:' + id));
     if (dataCache) return dataCache;
     try {
       const post = await this.prisma.post.findUnique({
@@ -136,7 +134,7 @@ export class BlogService {
 
       if (!post) throw new PostNotFoundError(id);
 
-      await this.cache.set('post:' + id, post, 60);
+      await this.cache.set('blog:' + id, JSON.stringify(post), 60);
 
       return post;
     } catch (e) {
@@ -151,19 +149,14 @@ export class BlogService {
     }
   }
 
-  async findPostByQuery(q: string, offset: number, limit: number) {
+  async findPostByTags(tag: string, offset: number, limit: number) {
     try {
       const posts = await this.prisma.post.findMany({
         where: {
           OR: [
             {
-              title: {
-                contains: q,
-              },
-            },
-            {
               tags: {
-                has: q,
+                has: tag,
               },
             },
           ],
@@ -177,22 +170,24 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      if (!posts) throw new PostNotFoundError(q);
-
-      await this.cache.cacheState<Post[]>({ model: 'post', storeKey: 'posts' });
+      if (!posts) throw new PostNotFoundError(tag);
 
       return data;
     } catch (e) {
       console.log(e);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new PostNotFoundError(q, e);
+        throw new PostNotFoundError(tag, e);
       }
       throw e;
     }
   }
 
   async findPostByCategory(params: SearchPostDto) {
-    const cacheKey = `post:${params?.category}:${params?.offset}:${params?.limit}`;
+    const cacheKey = `blog:${params?.category}:${params?.offset}:${params?.limit}`;
+
+    const cacheData = JSON.parse(await this.cache.get(cacheKey));
+
+    if (cacheData) return { posts: cacheData, total: cacheData.length };
 
     try {
       const posts = await this.prisma.post.findMany({
@@ -215,7 +210,7 @@ export class BlogService {
       if (!posts) throw new NotFoundException(`Post with category ${params?.category} not found`);
       const data = { posts, total: posts.length };
 
-      await this.cache.set(cacheKey, data, 60);
+      await this.cache.set(cacheKey, JSON.stringify(posts), 60);
 
       return data;
     } catch (e) {
@@ -231,12 +226,13 @@ export class BlogService {
     }
   }
 
-  async updatePost(id: string, updatePostDto: UpdatePostDto, files: Array<Express.Multer.File>) {
+  async updatePost(id: string, updatePostDto: UpdatePostDto, files?: Array<Express.Multer.File>) {
     try {
       const post = await this.prisma.post.update({
         where: { id },
         data: {
           ...updatePostDto,
+
           updatedAt: new Date(),
         },
       });

@@ -1,4 +1,3 @@
-import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { SearchPostDto } from './dto/search-post.dto';
 import { JwtAuthGuard } from './../auth/guards/jwt-auth.guard';
@@ -31,7 +30,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
-  @UseGuards(JwtAuthGuard, RoleGuard)
+  @UseGuards(JwtAuthGuard)
   @Permission(['CREATE'])
   @UseGuards(RoleGuard)
   @UseInterceptors(FilesInterceptor('files'))
@@ -48,9 +47,8 @@ export class BlogController {
     return res.status(200).json({ message: 'Post created successfully', post });
   }
 
-  @Get('/post')
-  async findPostByQueries(
-    @Query('q') q: string,
+  @Get('/')
+  async findAllPosts(
     @Query('offset') offset: string,
     @Query('limit') limit: string,
     @Res() res: Response,
@@ -59,12 +57,22 @@ export class BlogController {
     const postOffset = offset ? parseInt(offset, 10) : 0;
     const postLimit = limit ? parseInt(limit, 10) : 10;
 
-    if (q) {
-      posts = await this.blogService.findPostByQuery(q, postOffset, postLimit);
-      return res.status(200).json({ message: 'Post found successfully', data: posts });
-    }
-
     posts = await this.blogService.findAllPosts(postOffset, postLimit);
+    return res.status(200).json({ message: 'Posts found successfully', data: posts });
+  }
+
+  @Get('/post')
+  async findPostByTag(
+    @Query('tag') tag: string,
+    @Query('offset') offset: string,
+    @Query('limit') limit: string,
+    @Res() res: Response,
+  ) {
+    let posts;
+    const postOffset = offset ? parseInt(offset, 10) : 0;
+    const postLimit = limit ? parseInt(limit, 10) : 10;
+
+    posts = await this.blogService.findPostByTags(tag, postOffset, postLimit);
     return res.status(200).json({ message: 'Posts found successfully', data: posts });
   }
 

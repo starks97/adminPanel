@@ -28,7 +28,7 @@ export const errorCases = {
 interface IHandler {
   errorType: ErrorType;
   errorCase: string;
-  value?: string | number;
+  value?: string | number | string[];
   status?: number;
   prismaError?: Prisma.PrismaClientKnownRequestError;
 }
