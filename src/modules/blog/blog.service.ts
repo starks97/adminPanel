@@ -16,7 +16,13 @@ export class BlogService {
     private readonly cache: CacheSystemService,
     private readonly cloudinary: CloudinarySystemService,
     private readonly resource: ResourcesService,
-  ) {}
+  ) {
+    this.cache._configModel('post', {
+      include: {
+        resources: true,
+      },
+    });
+  }
 
   async createPost(
     userId: string,
@@ -68,7 +74,7 @@ export class BlogService {
           errorType: 'Post',
         });
 
-      await this.cache.cacheState<Post>({
+      this.cache.cacheState<Post>({
         model: 'post',
         storeKey: 'posts',
       });
@@ -111,7 +117,7 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      await this.cache.set(`blog:${offset}:${limit}`, JSON.stringify(data), 60);
+      this.cache.set(`blog:${offset}:${limit}`, JSON.stringify(posts), 60);
 
       return data || [];
     } catch (e) {
@@ -136,7 +142,7 @@ export class BlogService {
 
       if (!post) throw new PostNotFoundError(id);
 
-      await this.cache.set('blog:' + id, JSON.stringify(post), 60);
+      this.cache.set('blog:' + id, JSON.stringify(post), 60);
 
       return post;
     } catch (e) {
@@ -152,15 +158,6 @@ export class BlogService {
   }
 
   async findPostByTags(tag: string[], offset: number, limit: number) {
-    const dataCacheShield = await this.cache.cachePagination({
-      limit,
-      offset,
-      newKey: `blog:${tag}`,
-      storeKey: 'posts',
-    });
-
-    if (dataCacheShield) return { posts: dataCacheShield, total: dataCacheShield.length };
-
     const dataWhithout = JSON.parse(await this.cache.get(`blog:${tag}:${offset}:${limit}`));
 
     if (dataWhithout) return { posts: dataWhithout, total: dataWhithout.length };
@@ -189,7 +186,7 @@ export class BlogService {
 
       if (!posts) throw new PostNotFoundError(tag);
 
-      await this.cache.set(`blog:${tag}:${offset}:${limit}`, JSON.stringify(posts), 60);
+      this.cache.set(`blog:${tag}:${offset}:${limit}`, JSON.stringify(posts), 60);
 
       return data;
     } catch (e) {
@@ -229,7 +226,7 @@ export class BlogService {
       if (!posts) throw new NotFoundException(`Post with category ${params?.category} not found`);
       const data = { posts, total: posts.length };
 
-      await this.cache.set(cacheKey, JSON.stringify(posts), 60);
+      this.cache.set(cacheKey, JSON.stringify(posts), 60);
 
       return data;
     } catch (e) {
@@ -246,11 +243,7 @@ export class BlogService {
   }
 
   async updatePost(id: string, updatePostDto: UpdatePostDto, files?: Array<Express.Multer.File>) {
-    const cloud = !files ? null : await this.cloudinary.upload(files);
-
-    const data = cloud.map(item => {
-      return { url: item.url, resource_type: item.resource_type };
-    });
+    const cloud = files && files.length > 0 ? await this.cloudinary.upload(files) : undefined;
 
     try {
       const post = await this.prisma.post.update({
@@ -258,12 +251,19 @@ export class BlogService {
         data: {
           ...updatePostDto,
           updatedAt: new Date(),
+          resources: cloud
+            ? {
+                createMany: {
+                  data: cloud,
+                },
+              }
+            : undefined,
         },
       });
 
       if (!post) throw new PostNotFoundError(id);
 
-      await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
+      this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
     } catch (e) {
       console.log(e);
@@ -282,7 +282,7 @@ export class BlogService {
 
       if (!post) throw new PostNotFoundError(id);
 
-      await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
+      this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
     } catch (e) {
       console.log(e);
