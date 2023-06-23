@@ -1,6 +1,6 @@
 import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
 import { CacheSystemService } from './../cache-system/cache-system.service';
-import { Injectable, NotFoundException, HttpException } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpException, ForbiddenException } from '@nestjs/common';
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
 
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -84,20 +84,22 @@ export class BlogService {
   }
 
   async findAllPosts(offset: number, limit: number) {
+    const dataFromCacheShield = await this.cache.cachePagination({
+      limit,
+      offset,
+      newKey: 'blog',
+      storeKey: 'posts',
+    });
+
+    if (dataFromCacheShield)
+      return { posts: dataFromCacheShield, total: dataFromCacheShield.length };
+
     const dataWhithout = JSON.parse(await this.cache.get(`blog:${offset}:${limit}`));
 
-    //const dataFromCacheShield = await this.cache.cachePagination('posts', offset, limit, 'post');
-
-    /*if (!dataFromCacheShield) {
-      if (dataWhithout) return dataWhithout;
-    } else {
-      return dataFromCacheShield;
-    }*/
-
-    //if (dataCache) return { posts: JSON.parse(dataCache), total: JSON.parse(dataCache).length };
+    if (dataWhithout) return { posts: dataWhithout.posts, total: dataWhithout.total };
     try {
       const posts = await this.prisma.post.findMany({
-        skip: offset * limit,
+        skip: offset,
         take: limit,
         orderBy: {
           createdAt: 'desc',
@@ -149,14 +151,29 @@ export class BlogService {
     }
   }
 
-  async findPostByTags(tag: string, offset: number, limit: number) {
+  async findPostByTags(tag: string[], offset: number, limit: number) {
+    const dataCacheShield = await this.cache.cachePagination({
+      limit,
+      offset,
+      newKey: `blog:${tag}`,
+      storeKey: 'posts',
+    });
+
+    if (dataCacheShield) return { posts: dataCacheShield, total: dataCacheShield.length };
+
+    const dataWhithout = JSON.parse(await this.cache.get(`blog:${tag}:${offset}:${limit}`));
+
+    if (dataWhithout) return { posts: dataWhithout, total: dataWhithout.length };
+
     try {
+      if (!tag) throw new NotFoundException('Please provide a tag to search for posts.');
+
       const posts = await this.prisma.post.findMany({
         where: {
           OR: [
             {
               tags: {
-                has: tag,
+                hasEvery: tag,
               },
             },
           ],
@@ -171,6 +188,8 @@ export class BlogService {
       const data = { posts, total: posts.length };
 
       if (!posts) throw new PostNotFoundError(tag);
+
+      await this.cache.set(`blog:${tag}:${offset}:${limit}`, JSON.stringify(posts), 60);
 
       return data;
     } catch (e) {
@@ -227,19 +246,22 @@ export class BlogService {
   }
 
   async updatePost(id: string, updatePostDto: UpdatePostDto, files?: Array<Express.Multer.File>) {
+    const cloud = !files ? null : await this.cloudinary.upload(files);
+
+    const data = cloud.map(item => {
+      return { url: item.url, resource_type: item.resource_type };
+    });
+
     try {
       const post = await this.prisma.post.update({
         where: { id },
         data: {
           ...updatePostDto,
-
           updatedAt: new Date(),
         },
       });
 
       if (!post) throw new PostNotFoundError(id);
-
-      await this.resource.updateResource(id, files);
 
       await this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;

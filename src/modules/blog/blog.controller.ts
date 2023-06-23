@@ -47,7 +47,7 @@ export class BlogController {
     return res.status(200).json({ message: 'Post created successfully', post });
   }
 
-  @Get('/')
+  @Get('/posts')
   async findAllPosts(
     @Query('offset') offset: string,
     @Query('limit') limit: string,
@@ -63,7 +63,7 @@ export class BlogController {
 
   @Get('/post')
   async findPostByTag(
-    @Query('tag') tag: string,
+    @Query('tag') tag: string[],
     @Query('offset') offset: string,
     @Query('limit') limit: string,
     @Res() res: Response,

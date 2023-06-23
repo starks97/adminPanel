@@ -28,6 +28,9 @@ import { CacheShieldMiddleware } from 'src/middlewares/cacheShield.midddleware';
 export class BlogModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(LoggerMiddleware).exclude({ path: 'blog', method: RequestMethod.GET });
-    consumer.apply(CacheShieldMiddleware).exclude({ path: 'blog', method: RequestMethod.GET });
+    consumer
+      .apply(CacheShieldMiddleware)
+      .exclude({ path: 'blog', method: RequestMethod.GET })
+      .forRoutes('blog');
   }
 }
