@@ -175,7 +175,7 @@ export class CacheSystemService {
 
     if (!ttl) throw new Error('TTL is required');
 
-    return await this.redis.set(key, value, 'EX', ttl);
+    return this.redis.set(key, value, 'EX', ttl);
   }
 
   /**
@@ -234,9 +234,8 @@ export class CacheSystemService {
         });
       });
     }
-    const redisData = JSON.stringify(data);
 
-    await this.set(storeKey, redisData, 600);
+    this.set(storeKey, JSON.stringify(data), 600);
 
     return data;
   }
@@ -287,7 +286,7 @@ export class CacheSystemService {
       const dataArray = JSON.parse(data);
       const newData = dataArray.slice(offset, limit);
 
-      await this.set(`${newKey}:${offset}:${limit}`, JSON.stringify(newData), 60);
+      this.set(`${newKey}:${offset}:${limit}`, JSON.stringify(newData), 60 * 2);
 
       return newData;
     } catch (e) {

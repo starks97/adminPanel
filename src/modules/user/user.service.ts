@@ -187,7 +187,7 @@ export class UserService {
           errorType: 'User',
         });
 
-      await this.cache.cacheState<User>({
+      this.cache.cacheState<User>({
         model: 'user',
         storeKey: 'users',
         exclude: ['password'],
@@ -310,7 +310,7 @@ export class UserService {
 
       delete user.password;
 
-      await this.cache.set('user:' + id, JSON.stringify(user), 60);
+      this.cache.set('user:' + id, JSON.stringify(user), 60);
 
       return user;
     } catch (e) {
@@ -350,16 +350,16 @@ export class UserService {
    */
 
   async FindUserByName(q: string, offset: number, limit: number) {
-    const dataCache = JSON.parse(await this.cache.get(`user:${q}`));
+    const dataCache = JSON.parse(await this.cache.get(`user:${q}:offset:${offset}:limit:${limit}`));
 
-    if (dataCache) return dataCache;
+    if (dataCache) return { users: dataCache, total: dataCache.length };
     try {
       const user = await this.prisma.user.findMany({
         where: {
           OR: [
             {
               name: {
-                contains: q,
+                startsWith: q,
               },
             },
           ],
@@ -382,7 +382,7 @@ export class UserService {
 
       const data = { users: user, total: user.length };
 
-      await this.cache.set(`user:${q}`, JSON.stringify(user), 60);
+      this.cache.set(`user:${q}:offset:${offset}:limit:${limit}`, JSON.stringify(user), 60);
 
       return data;
     } catch (e) {
@@ -454,7 +454,7 @@ export class UserService {
 
       const data = { users, total: users.length };
 
-      await this.cache.set(`user:${offset}:${limit}`, JSON.stringify(users), 60);
+      this.cache.set(`user:${offset}:${limit}`, JSON.stringify(users), 60);
 
       return data || [];
     } catch (e) {
@@ -553,7 +553,7 @@ export class UserService {
         return updatedUser;
       });
 
-      await this.cache.cacheState<User>({
+      this.cache.cacheState<User>({
         model: 'user',
         storeKey: 'users',
         exclude: ['password'],
@@ -617,7 +617,7 @@ export class UserService {
           errorType: 'User',
         });
 
-      await this.cache.cacheState<User>({
+      this.cache.cacheState<User>({
         model: 'user',
         storeKey: 'users',
         exclude: ['password'],
@@ -692,7 +692,7 @@ export class UserService {
           errorType: 'User',
         });
 
-      await this.cache.cacheState<User>({
+      this.cache.cacheState<User>({
         model: 'user',
         storeKey: 'users',
         exclude: ['password'],
@@ -761,7 +761,7 @@ export class UserService {
 
       delete user.password;
 
-      await this.cache.set('user:' + email, JSON.stringify(user), 60);
+      this.cache.set('user:' + email, JSON.stringify(user), 60);
 
       return user;
     } catch (e) {
@@ -799,7 +799,7 @@ export class UserService {
           errorType: 'User',
         });
 
-      await this.cache.cacheState({
+      this.cache.cacheState({
         model: 'user',
         storeKey: 'users',
         exclude: ['password'],

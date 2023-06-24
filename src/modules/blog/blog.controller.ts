@@ -2,6 +2,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { SearchPostDto } from './dto/search-post.dto';
 import { JwtAuthGuard } from './../auth/guards/jwt-auth.guard';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -22,8 +23,10 @@ import { CreatePostDto } from './dto/create-blog.dto';
 import { Request, Response } from 'express';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Permission } from '../auth/decorator/permissio.decorator';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiTags, getSchemaPath } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { Category } from '@prisma/client';
+import { UseZodGuard } from 'nestjs-zod';
 
 @ApiTags('Blog')
 @Controller('blog')
@@ -51,28 +54,19 @@ export class BlogController {
   async findAllPosts(
     @Query('offset') offset: string,
     @Query('limit') limit: string,
+    @Query('tags') tags: string[],
     @Res() res: Response,
   ) {
     let posts;
     const postOffset = offset ? parseInt(offset, 10) : 0;
     const postLimit = limit ? parseInt(limit, 10) : 10;
+
+    if (tags) {
+      posts = await this.blogService.findPostByTags(tags, postOffset, postLimit);
+      return res.status(200).json({ message: 'Posts found successfully', data: posts });
+    }
 
     posts = await this.blogService.findAllPosts(postOffset, postLimit);
-    return res.status(200).json({ message: 'Posts found successfully', data: posts });
-  }
-
-  @Get('/post')
-  async findPostByTag(
-    @Query('tag') tag: string[],
-    @Query('offset') offset: string,
-    @Query('limit') limit: string,
-    @Res() res: Response,
-  ) {
-    let posts;
-    const postOffset = offset ? parseInt(offset, 10) : 0;
-    const postLimit = limit ? parseInt(limit, 10) : 10;
-
-    posts = await this.blogService.findPostByTags(tag, postOffset, postLimit);
     return res.status(200).json({ message: 'Posts found successfully', data: posts });
   }
 
@@ -81,22 +75,20 @@ export class BlogController {
     const response = await this.blogService.findPostById(id);
     return res.status(200).json({ message: 'Post found successfully', response });
   }
+  @ApiOperation({
+    description:
+      'This endpoint is used to find post by category. The category can be one of the following: TECHNOLOGY, SPORT, POLITICS, HEALTH, ENTERTAINMENT, BUSINESS, SCIENCE, EDUCATION, OTHERS',
+  })
+  @Get('post')
+  async findPostByCategory(@Query('query') query: string, @Res() res: Response) {
+    try {
+      const category: SearchPostDto = JSON.parse(query);
 
-  @Get('post/category/:category')
-  async findPostByCategory(
-    @Param() params: SearchPostDto,
-    @Query('offset') offset: string,
-    @Query('limit') limit: string,
-    @Res() res: Response,
-  ) {
-    const postOffset = offset ? parseInt(offset, 10) : 0;
-    const postLimit = limit ? parseInt(limit, 10) : 10;
-    const response = await this.blogService.findPostByCategory({
-      ...params,
-      offset: postOffset,
-      limit: postLimit,
-    });
-    return res.status(200).json({ message: 'Post found successfully', response });
+      const response = await this.blogService.findPostByCategory(category);
+      return res.status(200).json({ message: 'Post found successfully', response });
+    } catch (error) {
+      return res.status(400).json({ message: 'Invalid query parameter', error });
+    }
   }
 
   @UseGuards(JwtAuthGuard)

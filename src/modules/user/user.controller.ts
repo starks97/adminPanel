@@ -32,7 +32,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Permission(['UPDATE'])
-  @Get('/users')
+  @Get()
   async findUserByQueries(
     @Query('offset') offset: string,
     @Query('limit') limit: string,

@@ -49,7 +49,9 @@ export class RoleSystemService {
       },
     });
 
-    return roles ?? [];
+    const data = { roles, total: roles.length };
+
+    return data ?? [];
   }
 
   async findRoleByName(name: string): Promise<Role | CustomErrorException> {

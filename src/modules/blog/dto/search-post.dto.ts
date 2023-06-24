@@ -5,6 +5,7 @@ import { createPostSchema } from './create-blog.dto';
 const searchPostSchema = createPostSchema.pick({ category: true }).extend({
   offset: z.onumber().optional(),
   limit: z.onumber().optional(),
+  //tags: z.array(z.string()).optional(),
 });
 
 export class SearchPostDto extends createZodDto(searchPostSchema) {}

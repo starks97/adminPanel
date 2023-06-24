@@ -19,6 +19,8 @@ export const errorCases = {
   POST_NOT_CREATED: 'post_not_created',
   PERMISSION_NOT_FOUND: 'permission_not_found',
   POST_NOT_FOUND: 'post_not_found',
+  POST_NOT_DELETED: 'post_not_deleted',
+  POST_NOT_UPDATED: 'post_not_updated',
   PRISMA_ERROR: 'prisma_error',
   RESOURCE_NOT_FOUND: 'resource_not_found',
   RESOURCE_NOT_UPDATED: 'resource_not_updated',

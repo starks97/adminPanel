@@ -9,6 +9,12 @@ import { Post, Prisma } from '@prisma/client';
 
 import { ResourcesService } from './resources/resources.service';
 
+interface Query {
+  query: string | SearchPostDto;
+  offset: number;
+  limit: number;
+}
+
 @Injectable()
 export class BlogService {
   constructor(
@@ -117,7 +123,7 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      this.cache.set(`blog:${offset}:${limit}`, JSON.stringify(posts), 60);
+      this.cache.set(`blog:${offset}:${limit}`, JSON.stringify(posts), 60 * 2);
 
       return data || [];
     } catch (e) {
@@ -142,7 +148,7 @@ export class BlogService {
 
       if (!post) throw new PostNotFoundError(id);
 
-      this.cache.set('blog:' + id, JSON.stringify(post), 60);
+      this.cache.set('blog:' + id, JSON.stringify(post), 60 * 2);
 
       return post;
     } catch (e) {
@@ -157,20 +163,20 @@ export class BlogService {
     }
   }
 
-  async findPostByTags(tag: string[], offset: number, limit: number) {
-    const dataWhithout = JSON.parse(await this.cache.get(`blog:${tag}:${offset}:${limit}`));
+  async findPostByTags(tags: string[], offset: number, limit: number) {
+    const dataWhithout = JSON.parse(await this.cache.get(`blog:${tags}:${offset}:${limit}`));
 
     if (dataWhithout) return { posts: dataWhithout, total: dataWhithout.length };
 
     try {
-      if (!tag) throw new NotFoundException('Please provide a tag to search for posts.');
+      if (!tags) throw new NotFoundException('Please provide a tag to search for posts.');
 
       const posts = await this.prisma.post.findMany({
         where: {
           OR: [
             {
               tags: {
-                hasEvery: tag,
+                hasEvery: tags,
               },
             },
           ],
@@ -184,22 +190,76 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      if (!posts) throw new PostNotFoundError(tag);
+      if (!posts) throw new PostNotFoundError(tags);
 
-      this.cache.set(`blog:${tag}:${offset}:${limit}`, JSON.stringify(posts), 60);
+      this.cache.set(`blog:${tags}:${offset}:${limit}`, JSON.stringify(posts), 60 * 2);
 
       return data;
     } catch (e) {
       console.log(e);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new PostNotFoundError(tag, e);
+        throw new PostNotFoundError(tags, e);
       }
       throw e;
     }
   }
 
+  /*async findPostByQuery(query: SearchPostDto) {
+    const { category, limit, offset, tags } = query;
+
+    const cacheParams = {
+      tags: ` blog:${tags}:${offset}:${limit}`,
+      category: `blog:${category}:${offset}:${limit}`,
+    };
+
+    const dataCache = !tags
+      ? JSON.parse(await this.cache.get(cacheParams.category))
+      : JSON.parse(await this.cache.get(cacheParams.tags));
+
+    if (dataCache) return { posts: dataCache, total: dataCache.length };
+
+    try {
+      const posts = await this.prisma.post.findMany({
+        where: {
+          category: {
+            equals: category,
+          },
+          OR: [
+            {
+              tags: {
+                hasEvery: tags,
+              },
+            },
+          ],
+        },
+      });
+
+      if (!posts) throw new NotFoundException('Post not found');
+
+      const data = { posts, total: posts.length };
+
+      tags
+        ? this.cache.set(cacheParams.tags, JSON.stringify(posts), 60)
+        : this.cache.set(cacheParams.category, JSON.stringify(posts), 60);
+
+      return data;
+    } catch (e) {
+      console.log(e);
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomErrorException({
+          errorCase: errorCases.POST_NOT_FOUND,
+          errorType: 'Post',
+        });
+      }
+
+      throw e;
+    }
+  }*/
+
   async findPostByCategory(params: SearchPostDto) {
-    const cacheKey = `blog:${params?.category}:${params?.offset}:${params?.limit}`;
+    const { category, limit, offset } = params;
+
+    const cacheKey = `blog:${category}:${offset}:${limit}`;
 
     const cacheData = JSON.parse(await this.cache.get(cacheKey));
 
@@ -211,19 +271,19 @@ export class BlogService {
           OR: [
             {
               category: {
-                equals: params?.category,
+                in: category,
               },
             },
           ],
         },
-        skip: params?.offset,
-        take: params?.limit,
+        skip: offset,
+        take: limit,
         include: {
           resources: true,
         },
       });
 
-      if (!posts) throw new NotFoundException(`Post with category ${params?.category} not found`);
+      if (!posts) throw new NotFoundException(`Post with category ${category} not found`);
       const data = { posts, total: posts.length };
 
       this.cache.set(cacheKey, JSON.stringify(posts), 60);
@@ -235,7 +295,7 @@ export class BlogService {
         throw new CustomErrorException({
           errorCase: errorCases.POST_NOT_FOUND,
           errorType: 'Post',
-          value: params?.category,
+          value: category,
         });
       }
       throw e;
@@ -259,9 +319,17 @@ export class BlogService {
               }
             : undefined,
         },
+        include: {
+          resources: true,
+        },
       });
 
-      if (!post) throw new PostNotFoundError(id);
+      if (!post)
+        throw new CustomErrorException({
+          errorCase: errorCases.POST_NOT_UPDATED,
+          errorType: 'Post',
+          value: id,
+        });
 
       this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
       return post;
@@ -276,14 +344,25 @@ export class BlogService {
 
   async deletePost(id: string) {
     try {
-      const post = await this.prisma.post.delete({
-        where: { id },
+      const data = await this.prisma.$transaction(async ctx => {
+        const post = await ctx.post.delete({
+          where: { id },
+        });
+
+        if (!post) throw new PostNotFoundError(id);
+
+        await ctx.resource.deleteMany({
+          where: {
+            postId: post.id,
+          },
+        });
+
+        return post;
       });
 
-      if (!post) throw new PostNotFoundError(id);
-
       this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
-      return post;
+
+      return data;
     } catch (e) {
       console.log(e);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
