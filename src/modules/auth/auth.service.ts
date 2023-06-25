@@ -169,7 +169,7 @@ export class AuthService {
     return this.jwtService.decode(token) as JWTPayload;
   }
 
-  async _createTokens(payload: JWTPayload) {
+  private async _createTokens(payload: JWTPayload) {
     const [authToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('SECRET_JWT_KEY'),

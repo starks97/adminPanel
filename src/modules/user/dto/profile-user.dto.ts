@@ -8,9 +8,9 @@ const UserProfileSchema = z.object({
     .min(40, { message: 'bio is too short, please use at least 40 characters' })
     .max(120, { message: 'bio is too long, please use at least 120 characters' })
     .optional(),
-  lastName: z.string().min(3, { message: 'lastName is too short' }).nonempty(),
+  lastName: z.string().min(3, { message: 'lastName is too short' }),
   birthday: z.string(),
-  name: z.string().min(3, { message: 'name is too short' }).nonempty().optional(),
+  name: z.string().min(3, { message: 'name is too short' }).optional(),
 });
 
 export class ProfileUserDto extends createZodDto(UserProfileSchema) {}

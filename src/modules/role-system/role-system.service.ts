@@ -4,7 +4,7 @@ import { CreateRoleSystemDto } from './dto/create-role-system.dto';
 import { UpdateRoleSystemDto } from './dto/update-role-system.dto';
 
 import { CustomErrorException } from '../utils';
-import { Prisma, Role } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class RoleSystemService {
@@ -54,7 +54,7 @@ export class RoleSystemService {
     return data ?? [];
   }
 
-  async findRoleByName(name: string): Promise<Role | CustomErrorException> {
+  async findRoleByName(name: string) {
     try {
       const role = await this.prisma.role.findUnique({
         where: {

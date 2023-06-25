@@ -7,6 +7,6 @@ import { CacheSystemModule } from 'src/modules/cache-system/cache-system.module'
 @Module({
   providers: [ResourcesService],
   exports: [ResourcesService],
-  imports: [CloudinarySystemModule, CacheSystemModule],
+  imports: [CloudinarySystemModule],
 })
 export class ResourcesModule {}

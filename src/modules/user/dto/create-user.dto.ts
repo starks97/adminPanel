@@ -8,15 +8,14 @@ export const UserSchema = z.object({
     })
     .email({ message: 'e-mail is not valid' })
     .nonempty(),
-  name: z.string().min(3, { message: 'name is too short' }).nonempty(),
+  name: z.string().min(3, { message: 'name is too short' }),
   password: z
     .string({
       required_error: 'password is required',
     })
     .min(8, {
       message: 'password is too short, please use at least 8 characters',
-    })
-    .nonempty(),
+    }),
 });
 
 export class CreateUserDto extends createZodDto(UserSchema) {}
