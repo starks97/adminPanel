@@ -163,53 +163,12 @@ export class BlogService {
     }
   }
 
-  async findPostByTags(tags: string[], offset: number, limit: number) {
-    const dataWhithout = JSON.parse(await this.cache.get(`blog:${tags}:${offset}:${limit}`));
-
-    if (dataWhithout) return { posts: dataWhithout, total: dataWhithout.length };
-
-    try {
-      if (!tags) throw new NotFoundException('Please provide a tag to search for posts.');
-
-      const posts = await this.prisma.post.findMany({
-        where: {
-          OR: [
-            {
-              tags: {
-                hasEvery: tags,
-              },
-            },
-          ],
-        },
-        skip: offset,
-        take: limit,
-        include: {
-          resources: true,
-        },
-      });
-
-      const data = { posts, total: posts.length };
-
-      if (!posts) throw new PostNotFoundError(tags);
-
-      this.cache.set(`blog:${tags}:${offset}:${limit}`, JSON.stringify(posts), 60 * 2);
-
-      return data;
-    } catch (e) {
-      console.log(e);
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new PostNotFoundError(tags, e);
-      }
-      throw e;
-    }
-  }
-
-  /*async findPostByQuery(query: SearchPostDto) {
+  async findPostByQuery(query: SearchPostDto) {
     const { category, limit, offset, tags } = query;
 
     const cacheParams = {
-      tags: ` blog:${tags}:${offset}:${limit}`,
-      category: `blog:${category}:${offset}:${limit}`,
+      tags: ` blog:${tags}:${+offset || 0}:${+limit || 10}`,
+      category: `blog:${category}:${+offset || 0}:${+limit || 10}`,
     };
 
     const dataCache = !tags
@@ -219,19 +178,26 @@ export class BlogService {
     if (dataCache) return { posts: dataCache, total: dataCache.length };
 
     try {
+      const where = {};
+
+      if (tags && tags.length > 0) {
+        where['tags'] = {
+          hasEvery: tags,
+        };
+      }
+
+      if (category) {
+        where['category'] = {
+          equals: category,
+        };
+      }
+
       const posts = await this.prisma.post.findMany({
         where: {
-          category: {
-            equals: category,
-          },
-          OR: [
-            {
-              tags: {
-                hasEvery: tags,
-              },
-            },
-          ],
+          OR: [where],
         },
+        skip: +offset || 0,
+        take: +limit || 10,
       });
 
       if (!posts) throw new NotFoundException('Post not found');
@@ -252,52 +218,6 @@ export class BlogService {
         });
       }
 
-      throw e;
-    }
-  }*/
-
-  async findPostByCategory(params: SearchPostDto) {
-    const { category, limit, offset } = params;
-
-    const cacheKey = `blog:${category}:${offset}:${limit}`;
-
-    const cacheData = JSON.parse(await this.cache.get(cacheKey));
-
-    if (cacheData) return { posts: cacheData, total: cacheData.length };
-
-    try {
-      const posts = await this.prisma.post.findMany({
-        where: {
-          OR: [
-            {
-              category: {
-                in: category,
-              },
-            },
-          ],
-        },
-        skip: offset,
-        take: limit,
-        include: {
-          resources: true,
-        },
-      });
-
-      if (!posts) throw new NotFoundException(`Post with category ${category} not found`);
-      const data = { posts, total: posts.length };
-
-      this.cache.set(cacheKey, JSON.stringify(posts), 60);
-
-      return data;
-    } catch (e) {
-      console.log(e);
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new CustomErrorException({
-          errorCase: errorCases.POST_NOT_FOUND,
-          errorType: 'Post',
-          value: category,
-        });
-      }
       throw e;
     }
   }

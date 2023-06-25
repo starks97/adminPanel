@@ -25,22 +25,36 @@ interface PrismaProps<T> {
   id?: string;
   data?: any;
   value?: any;
+  options?: any;
+  properties: Prisma.SessionArgs;
 }
 
 export class PrismaMethods {
-  options = new Map<string, any>();
+  private options = new Map<string, any>();
   constructor(private readonly prisma: PrismaClient) {}
 
-  async findMany<T>({ model, exclude }: PrismaProps<T>): Promise<T[] | null> {
+  private applyOptions<T>(model: Uncapitalize<Prisma.ModelName>): any {
     const getOptions = this.options.get(model) ?? {};
+    return { ...getOptions };
+  }
 
-    const data: T[] = await (this.prisma as any)[model].findMany({ ...getOptions });
+  private applyExclusions<T>(data: T, exclude?: KeysOfType<T, any>[]): void {
+    if (exclude) {
+      exclude.forEach(key => {
+        delete data[key];
+      });
+    }
+  }
+
+  async findMany<T>({ model, exclude, options, properties }: PrismaProps<T>): Promise<T[] | null> {
+    const prismaOptions = this.applyOptions(model);
+    const mergedOptions = { ...prismaOptions, ...options }; // Merge Prisma options with custom options
+
+    const data: T[] = await (this.prisma as any)[model].findMany(mergedOptions);
 
     if (exclude) {
       data?.forEach(data => {
-        exclude.forEach(key => {
-          delete data[key];
-        });
+        this.applyExclusions(data, exclude);
       });
     }
 
