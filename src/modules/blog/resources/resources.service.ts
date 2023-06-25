@@ -1,61 +1,40 @@
-import { errorCases } from './../../utils/handlerError';
-import { CloudinarySystemService } from '../../cloudinary/cloudinary-system.service';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../prisma/prisma.service';
 import { CustomErrorException, PostNotFoundError } from '../../utils';
 import { Prisma } from '@prisma/client';
-import { PrismaMethods } from 'prisma/context';
 
 @Injectable()
 export class ResourcesService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly cloud: CloudinarySystemService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async updateResource(id: string, files?: Array<Express.Multer.File>) {
+  async deleteResources(postId: string, resourcesIds: string[]) {
     try {
-      const uploadImages = !files ? undefined : await this.cloud.upload(files);
+      const resource = await this.prisma.resource.deleteMany({
+        where: {
+          postId,
 
-      return await this.prisma.$transaction(async ctx => {
-        const post = await ctx.post.findUnique({
-          where: {
-            id,
+          id: {
+            in: resourcesIds,
           },
-          include: {
-            resources: true,
-          },
-        });
-
-        if (!post) throw new PostNotFoundError(id);
-
-        const resources = await ctx.resource.updateMany({
-          where: {
-            id: {
-              in: post.resources.map(resource => resource.id),
-            },
-          },
-          data: {
-            url: uploadImages[0].url,
-          },
-        });
-
-        if (!resources)
-          throw new CustomErrorException({
-            errorType: 'Resource',
-            value: 'id',
-            errorCase: 'RESOURCE_NOT_FOUND',
-          });
-
-        return resources;
+        },
       });
+
+      if (!resource)
+        throw new CustomErrorException({
+          errorCase: 'The resources could not be deleted',
+          errorType: 'Resource',
+          value: postId,
+        });
+
+      return resource;
     } catch (e) {
       console.log(e);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         throw new CustomErrorException({
+          errorCase: e.name,
           errorType: 'Resource',
-          value: 'id',
-          errorCase: errorCases.PRISMA_ERROR,
+          value: postId,
+          prismaError: e,
         });
       }
       throw e;

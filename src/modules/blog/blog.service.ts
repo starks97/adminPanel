@@ -66,6 +66,9 @@ export class BlogService {
             },
           },
         },
+        include: {
+          resources: true,
+        },
       });
 
       if (!post)
@@ -193,6 +196,9 @@ export class BlogService {
         },
         skip: +offset || 0,
         take: +limit || 10,
+        include: {
+          resources: true,
+        },
       });
 
       if (!posts) throw new NotFoundException('Post not found');
@@ -220,34 +226,52 @@ export class BlogService {
   async updatePost(id: string, updatePostDto: UpdatePostDto, files?: Array<Express.Multer.File>) {
     const cloud = files && files.length > 0 ? await this.cloudinary.upload(files) : undefined;
 
-    try {
-      const post = await this.prisma.post.update({
-        where: { id },
-        data: {
-          ...updatePostDto,
-          updatedAt: new Date(),
-          resources: cloud
-            ? {
-                createMany: {
-                  data: cloud,
-                },
-              }
-            : undefined,
-        },
-        include: {
-          resources: true,
-        },
-      });
+    const { resourcesIds, ...rest } = updatePostDto;
 
-      if (!post)
-        throw new CustomErrorException({
-          errorCase: errorCases.POST_NOT_UPDATED,
-          errorType: 'Post',
-          value: id,
+    try {
+      const data = await this.prisma.$transaction(async ctx => {
+        const post = await ctx.post.findUnique({
+          where: { id },
+          include: { resources: true },
         });
 
+        if (!post)
+          throw new CustomErrorException({
+            errorCase: errorCases.POST_NOT_UPDATED,
+            errorType: 'Post',
+            value: id,
+          });
+
+        if (resourcesIds && resourcesIds.length > 0) {
+          await this.resource.deleteResources(post.id, resourcesIds);
+        }
+
+        const updatePost = await this.prisma.post.update({
+          where: { id: post.id },
+          data: {
+            ...rest,
+            updatedAt: new Date(),
+            resources: cloud
+              ? {
+                  createMany: {
+                    data: cloud,
+                  },
+                }
+              : undefined,
+          },
+          include: {
+            resources: true,
+          },
+        });
+
+        if (!updatePost) throw new ForbiddenException('Post not updated');
+
+        return updatePost;
+      });
+
       this.cache.cacheState<Post>({ model: 'post', storeKey: 'posts' });
-      return post;
+
+      return data;
     } catch (e) {
       console.log(e);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
