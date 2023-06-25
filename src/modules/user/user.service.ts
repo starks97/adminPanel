@@ -2,7 +2,7 @@ import { CustomErrorException, errorCases, UserErrorHandler } from './../utils/h
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 
-import { CreateUserDto, LoginUserDto, ProfileUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, LoginUserDto, ProfileUserDto } from './dto';
 import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
 import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -251,13 +251,17 @@ export class UserService {
 
       const isVerifiedPassword = await this.passwordHasher.comparePassword(password, user.password);
 
-      if (!isVerifiedPassword) {
-        throw new HttpException('password_not_match', HttpStatus.NOT_FOUND);
-      }
+      if (!isVerifiedPassword)
+        throw new CustomErrorException({
+          errorCase: 'The password you provided not match, please provide the correct password',
+          errorType: 'User',
+          value: email,
+        });
 
       return user;
     } catch (e) {
       console.log(e);
+
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         throw new UserErrorHandler('user', e, errorCases.USER_NOT_FOUND);
       }
@@ -672,25 +676,48 @@ export class UserService {
 
   async UpdateUserPassword(id: string, pass: UpdateUserPasswordDto) {
     try {
-      const newUserPassword = await this.prisma.user.update({
-        where: { id },
-        data: {
-          password: pass
-            ? await this.passwordHasher.hashPassword(pass?.password as string)
-            : undefined,
-          updatedAt: new Date(),
-        },
-        include: {
-          sessions: true,
-        },
-      });
+      const { newPassword, oldPassword } = pass;
 
-      if (!newUserPassword)
-        throw new CustomErrorException({
-          errorCase: errorCases.USER_NOT_UPDATED,
-          value: id,
-          errorType: 'User',
+      const data = await this.prisma.$transaction(async ctx => {
+        const user = await ctx.user.findUnique({
+          where: { id },
+          include: {
+            sessions: true,
+          },
         });
+
+        if (!user) throw new UserErrorHandler('user', null, errorCases.USER_NOT_FOUND);
+
+        const comparePass = await this.passwordHasher.comparePassword(oldPassword, user.password);
+
+        if (!comparePass)
+          throw new CustomErrorException({
+            errorCase:
+              'The password you provided is incorrect, please provide the correct password',
+            errorType: 'User',
+            value: id,
+          });
+
+        const updatedUser = await ctx.user.update({
+          where: { id },
+          data: {
+            password: pass ? await this.passwordHasher.hashPassword(newPassword) : undefined,
+            updatedAt: new Date(),
+          },
+          include: {
+            sessions: true,
+          },
+        });
+
+        if (!updatedUser)
+          throw new CustomErrorException({
+            errorCase: errorCases.USER_NOT_UPDATED,
+            value: id,
+            errorType: 'User',
+          });
+
+        return updatedUser;
+      });
 
       this.cache.cacheState<User>({
         model: 'user',
@@ -698,7 +725,7 @@ export class UserService {
         exclude: ['password'],
       });
 
-      return newUserPassword;
+      return data;
     } catch (e) {
       console.log(e.message);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
@@ -780,7 +807,7 @@ export class UserService {
   async createUserProfile(profile: ProfileUserDto, id: string, file?: Express.Multer.File) {
     const cloud = !file ? undefined : await this.cloud.uploadSingle(file);
     try {
-      const { bio, birthday, lastName } = profile;
+      const { bio, birthday, lastName, name } = profile;
 
       const user = await this.prisma.user.update({
         where: { id },
@@ -788,6 +815,7 @@ export class UserService {
           bio,
           birthday,
           lastName,
+          name,
           image: cloud && cloud.url ? cloud.url : undefined,
         },
       });

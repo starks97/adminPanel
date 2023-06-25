@@ -55,7 +55,7 @@ export class BlogController {
   @ApiQuery({ name: 'category', type: String, required: false })
   @ApiQuery({ name: 'tags', isArray: true, type: String, required: false })
   @ApiResponse({ status: 200, description: 'Post found successfully' })
-  @Get('/posts')
+  @Get('/post')
   async findAllPosts(@Query() query: SearchPostDto, @Res() res: Response) {
     const postOffset = +query.offset || 0;
     const postLimit = +query.limit || 10;

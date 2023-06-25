@@ -9,12 +9,6 @@ import { Post, Prisma } from '@prisma/client';
 
 import { ResourcesService } from './resources/resources.service';
 
-interface Query {
-  query: string | SearchPostDto;
-  offset: number;
-  limit: number;
-}
-
 @Injectable()
 export class BlogService {
   constructor(
@@ -96,6 +90,7 @@ export class BlogService {
   }
 
   async findAllPosts(offset: number, limit: number) {
+    const cacheKey = `blog:offset:${offset}:limit:${limit}`;
     const dataFromCacheShield = await this.cache.cachePagination({
       limit,
       offset,
@@ -106,7 +101,7 @@ export class BlogService {
     if (dataFromCacheShield)
       return { posts: dataFromCacheShield, total: dataFromCacheShield.length };
 
-    const dataWhithout = JSON.parse(await this.cache.get(`blog:${offset}:${limit}`));
+    const dataWhithout = JSON.parse(await this.cache.get(cacheKey));
 
     if (dataWhithout) return { posts: dataWhithout.posts, total: dataWhithout.total };
     try {
@@ -123,7 +118,7 @@ export class BlogService {
 
       const data = { posts, total: posts.length };
 
-      this.cache.set(`blog:${offset}:${limit}`, JSON.stringify(posts), 60 * 2);
+      this.cache.set(cacheKey, JSON.stringify(posts), 60 * 2);
 
       return data || [];
     } catch (e) {
@@ -167,8 +162,8 @@ export class BlogService {
     const { category, limit, offset, tags } = query;
 
     const cacheParams = {
-      tags: ` blog:${tags}:${+offset || 0}:${+limit || 10}`,
-      category: `blog:${category}:${+offset || 0}:${+limit || 10}`,
+      tags: ` blog:${tags}:offset:${+offset || 0}:limit:${+limit || 10}`,
+      category: `blog:${category}:offset:${+offset || 0}:limit:${+limit || 10}`,
     };
 
     const dataCache = !tags

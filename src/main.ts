@@ -16,7 +16,6 @@ async function bootstrap() {
     .setTitle('Admin Panel')
     .setDescription('ADMIN PANEL for skycode graphics')
     .setVersion('1.0')
-    .addTag('panel')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

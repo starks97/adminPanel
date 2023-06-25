@@ -10,6 +10,7 @@ const UserProfileSchema = z.object({
     .optional(),
   lastName: z.string().min(3, { message: 'lastName is too short' }).nonempty(),
   birthday: z.string(),
+  name: z.string().min(3, { message: 'name is too short' }).nonempty().optional(),
 });
 
 export class ProfileUserDto extends createZodDto(UserProfileSchema) {}

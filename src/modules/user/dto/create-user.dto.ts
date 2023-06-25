@@ -17,15 +17,6 @@ export const UserSchema = z.object({
       message: 'password is too short, please use at least 8 characters',
     })
     .nonempty(),
-  confirmPassword: z.string().min(4).optional(),
 });
-/*.superRefine(({ confirmPassword, password }, ctx) => {
-    if (confirmPassword !== password) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'The passwords did not match',
-      });
-    }
-  });*/
 
 export class CreateUserDto extends createZodDto(UserSchema) {}

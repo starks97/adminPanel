@@ -18,13 +18,13 @@ import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 
 import { RoleGuard } from './../auth/guards/role.guard';
-import { ProfileUserDto, UpdateUserDto, UpdateUserPasswordDto } from './dto';
+import { ProfileUserDto, UpdateUserPasswordDto } from './dto';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Permission } from '../auth/decorator/permissio.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-@ApiTags('user')
+@ApiTags('User')
 @Controller('user')
 @UseGuards(JwtAuthGuard)
 @UseGuards(RoleGuard)
@@ -39,8 +39,8 @@ export class UserController {
     @Query('q') q: string,
     @Res() res: Response,
   ) {
-    const userOffset = offset ? parseInt(offset, 10) : 0;
-    const userLimit = limit ? parseInt(limit, 10) : 10;
+    const userOffset = +offset || 0;
+    const userLimit = +limit || 10;
 
     if (q) {
       const response = await this.userService.FindUserByName(q, userOffset, userLimit);
@@ -73,16 +73,19 @@ export class UserController {
     @Body() updateUserDto: UpdateUserPasswordDto,
     @Res() res: Response,
   ) {
-    const response = await this.userService.UpdateUserPassword(id, updateUserDto);
-
-    return res.status(200).json({ message: 'user_updated', data: response.id });
+    this.userService.UpdateUserPassword(id, updateUserDto);
+    res.removeHeader('auth_token');
+    res.clearCookie('refresh_token');
+    return res.status(200).json({ message: 'user_updated' });
   }
   @Permission(['DELETE'])
   @Delete('/:id')
   async removeUser(@Param('id') id: string, @Res() res: Response) {
-    const response = await this.userService.DeleteUser(id);
+    this.userService.DeleteUser(id);
+    res.removeHeader('auth_token');
+    res.clearCookie('refresh_token');
 
-    return res.status(200).json({ message: 'user_deleted', data: response.id });
+    return res.status(200).json({ message: 'user_deleted' });
   }
   @Permission(['CREATE'])
   @UseInterceptors(FileInterceptor('file'))
