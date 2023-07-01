@@ -49,8 +49,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Successful login' })
   @ApiResponse({ status: 403, description: 'Forbidden - User not logged' })
   @ApiBody({ type: LoginUserDto, description: 'User Data' })
-  @ApiConsumes('multipart/form-data')
-  @ApiConsumes('json')
+  @ApiConsumes('multipart/form-data', 'application/json')
   async findByLogin(@Body() { email, password }: LoginUserDto, @Res() res: Response) {
     const response = await this.authService.SignIn({ email, password });
 

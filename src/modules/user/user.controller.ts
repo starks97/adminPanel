@@ -35,11 +35,11 @@ import { Permission } from '../auth/decorator/permissio.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('User')
-//@ApiBearerAuth('access_token')
 //@ApiSecurity('bearer', ['UPDATE', 'DELETE', 'CREATE'])
 @Controller('user')
 @UseGuards(JwtAuthGuard)
 @UseGuards(RoleGuard)
+@ApiBearerAuth('access_token')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -50,6 +50,7 @@ export class UserController {
   @ApiQuery({ name: 'limit', type: Number, required: false })
   @ApiQuery({ name: 'q', type: String, required: false })
   @ApiResponse({ status: 200, description: 'Users found successfully' })
+  @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
   async findUserByQueries(
     @Query('offset') offset: string,
     @Query('limit') limit: string,
@@ -73,6 +74,7 @@ export class UserController {
   @ApiParam({ name: 'id', type: String })
   @ApiBody({ schema: { type: 'object', properties: { roleName: { type: 'string' } } } })
   @ApiResponse({ status: 200, description: 'Role assigned successfully' })
+  @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
   @ApiConsumes('multipart/form-data', 'application/json')
   async AssignRoleToUser(
     @Param('id') id: string,
@@ -88,6 +90,7 @@ export class UserController {
   @ApiOperation({ summary: 'Find user by ID', description: 'Find user by ID' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'User found successfully' })
+  @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
   findUserById(@Param('id') id: string) {
     return this.userService.FindUserById(id);
   }
@@ -97,6 +100,7 @@ export class UserController {
   @ApiParam({ name: 'id', type: String })
   @ApiBody({ type: UpdateUserPasswordDto, description: 'User Password Data' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
   @ApiConsumes('multipart/form-data', 'application/json')
   async updatePasswordUser(
     @Param('id') id: string,
@@ -113,6 +117,7 @@ export class UserController {
   @ApiOperation({ summary: 'Delete User', description: 'Delete User' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
   async removeUser(@Param('id') id: string, @Res() res: Response) {
     this.userService.DeleteUser(id);
     res.removeHeader('auth_token');
@@ -140,6 +145,7 @@ export class UserController {
     },
   })
   @ApiResponse({ status: 200, description: 'User profile created successfully' })
+  @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
   @ApiConsumes('multipart/form-data')
   async userProfile(
     @UploadedFile() file: Express.Multer.File,

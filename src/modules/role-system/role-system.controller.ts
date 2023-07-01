@@ -32,10 +32,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Permission } from '../auth/decorator/permissio.decorator';
 
 @ApiTags('Role System')
-@ApiBearerAuth('access-token')
 @Controller('role-system')
 @UseGuards(JwtAuthGuard)
 @UseGuards(RoleGuard)
+@ApiBearerAuth('access-token')
 export class RoleSystemController {
   constructor(private readonly roleSystemService: RoleSystemService) {}
 

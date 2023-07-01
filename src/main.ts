@@ -16,6 +16,19 @@ async function bootstrap() {
     .setTitle('Admin Panel')
     .setDescription('ADMIN PANEL for skycode graphics')
     .setVersion('1.0.0')
+    /*.addOAuth2({
+      type: 'oauth2',
+      flows: {
+        authorizationCode: {
+          authorizationUrl: 'http://localhost:3000/auth/signin',
+          tokenUrl: 'http://localhost:3000/auth/signin',
+          scopes: {
+            'read:users': 'read users',
+            'write:users': 'write users',
+          },
+        },
+      },
+    })*/
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
