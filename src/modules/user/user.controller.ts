@@ -14,7 +14,17 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Request, Response } from 'express';
 
 import { RoleGuard } from './../auth/guards/role.guard';
@@ -25,6 +35,8 @@ import { Permission } from '../auth/decorator/permissio.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('User')
+//@ApiBearerAuth('access_token')
+//@ApiSecurity('bearer', ['UPDATE', 'DELETE', 'CREATE'])
 @Controller('user')
 @UseGuards(JwtAuthGuard)
 @UseGuards(RoleGuard)
@@ -33,6 +45,11 @@ export class UserController {
 
   @Permission(['UPDATE'])
   @Get()
+  @ApiOperation({ summary: 'Get all users by queries', description: 'Get all users by queries' })
+  @ApiQuery({ name: 'offset', type: Number, required: false })
+  @ApiQuery({ name: 'limit', type: Number, required: false })
+  @ApiQuery({ name: 'q', type: String, required: false })
+  @ApiResponse({ status: 200, description: 'Users found successfully' })
   async findUserByQueries(
     @Query('offset') offset: string,
     @Query('limit') limit: string,
@@ -52,6 +69,11 @@ export class UserController {
   }
   @Permission(['UPDATE'])
   @Post('/:id')
+  @ApiOperation({ summary: 'Asign role to user', description: 'Asign role to user' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ schema: { type: 'object', properties: { roleName: { type: 'string' } } } })
+  @ApiResponse({ status: 200, description: 'Role assigned successfully' })
+  @ApiConsumes('multipart/form-data', 'application/json')
   async AssignRoleToUser(
     @Param('id') id: string,
     @Body('roleName') roleName: string,
@@ -63,11 +85,19 @@ export class UserController {
   }
   @Permission(['UPDATE'])
   @Get('/:id')
+  @ApiOperation({ summary: 'Find user by ID', description: 'Find user by ID' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'User found successfully' })
   findUserById(@Param('id') id: string) {
     return this.userService.FindUserById(id);
   }
   @Permission(['UPDATE'])
   @Patch('/:id')
+  @ApiOperation({ summary: 'Update Password of User', description: 'Update Password of User' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: UpdateUserPasswordDto, description: 'User Password Data' })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiConsumes('multipart/form-data', 'application/json')
   async updatePasswordUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserPasswordDto,
@@ -80,6 +110,9 @@ export class UserController {
   }
   @Permission(['DELETE'])
   @Delete('/:id')
+  @ApiOperation({ summary: 'Delete User', description: 'Delete User' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
   async removeUser(@Param('id') id: string, @Res() res: Response) {
     this.userService.DeleteUser(id);
     res.removeHeader('auth_token');
@@ -90,6 +123,24 @@ export class UserController {
   @Permission(['CREATE'])
   @UseInterceptors(FileInterceptor('file'))
   @Patch('/create_profile/:id')
+  @ApiOperation({ summary: 'Create User Profile', description: 'Create User Profile' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({
+    description: 'User Profile Data',
+    schema: {
+      type: 'object',
+      properties: {
+        bio: { type: 'string' },
+        lastName: { type: 'string' },
+        birthday: { type: 'string' },
+        name: { type: 'string' },
+        files: { type: 'array', items: { type: 'string', format: 'binary' } },
+      },
+      required: ['lastName', 'birthday'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'User profile created successfully' })
+  @ApiConsumes('multipart/form-data')
   async userProfile(
     @UploadedFile() file: Express.Multer.File,
     @Body() dataProfile: ProfileUserDto,

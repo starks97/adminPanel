@@ -1,20 +1,21 @@
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import {
   Body,
   Controller,
   Delete,
   ForbiddenException,
   Get,
-  Param,
-  Patch,
   Post,
   Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiCreatedResponse,
-  ApiForbiddenResponse,
+  ApiBadRequestResponse,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiSecurity,
   ApiTags,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
@@ -30,9 +31,12 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('/signup')
-  @ApiCreatedResponse({ description: 'Created Succesfully' })
-  @ApiUnprocessableEntityResponse({ description: 'Bad Request' })
-  @ApiForbiddenResponse({ description: 'Unauthorized Request' })
+  @ApiOperation({ summary: 'Sign Up User' })
+  @ApiResponse({ status: 201, description: 'Created Successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 403, description: 'Email already register' })
+  @ApiBody({ type: CreateUserDto, description: 'User Data' })
+  @ApiConsumes('multipart/form-data')
   async createUser(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
     const response = await this.authService.SignUp(createUserDto);
 
@@ -40,6 +44,13 @@ export class AuthController {
   }
 
   @Post('/signin')
+  @ApiOperation({ summary: 'Sign in' })
+  @ApiBadRequestResponse({ description: 'Invalid request body' })
+  @ApiResponse({ status: 200, description: 'Successful login' })
+  @ApiResponse({ status: 403, description: 'Forbidden - User not logged' })
+  @ApiBody({ type: LoginUserDto, description: 'User Data' })
+  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('json')
   async findByLogin(@Body() { email, password }: LoginUserDto, @Res() res: Response) {
     const response = await this.authService.SignIn({ email, password });
 
@@ -56,6 +67,8 @@ export class AuthController {
   }
 
   @Post('/logout')
+  @ApiOperation({ summary: 'Logout' })
+  @ApiResponse({ status: 200, description: 'Successful logout' })
   async logout(@Res() res: Response, @Req() req: Request) {
     const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
 
@@ -69,6 +82,10 @@ export class AuthController {
 
   @UseGuards(RefreshTokenGuard)
   @Get('/refresh_token')
+  @ApiOperation({ summary: 'Refresh Token' })
+  @ApiSecurity('refresh_token')
+  @ApiResponse({ status: 200, description: 'Token refreshed', type: String })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async refreshToken(@Req() req: Request, @Res() res: Response) {
     const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
 

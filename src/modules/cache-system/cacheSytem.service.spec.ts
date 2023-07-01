@@ -7,12 +7,14 @@ import { CacheSystemService } from './cache-system.service';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { PrismaService } from '../../../prisma/prisma.service';
 
-import Redis from 'ioredis-mock';
-const redisMock = new Redis();
+import * as Redis from 'ioredis';
+
+//import Redis from 'ioredis-mock';
+//const redisMock = new Redis();
 
 describe('cacheSystem', () => {
   let service: CacheSystemService;
-  let redis = new Redis();
+  let redis: Redis.Redis;
   let prismaMock: DeepMockProxy<{ [K in keyof PrismaClient]: Omit<PrismaClient[K], 'groupBy'> }>;
   const mockedUser = {
     id: '1234',
@@ -38,8 +40,12 @@ describe('cacheSystem', () => {
       imports: [PrismaModule, CacheSystemModule],
       providers: [
         {
-          provide: Redis,
-          useValue: redisMock,
+          provide: Redis.Redis,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            flushall: jest.fn(),
+          },
         },
       ],
     })
@@ -53,7 +59,7 @@ describe('cacheSystem', () => {
         PrismaService,
       );
     service = module.get<CacheSystemService>(CacheSystemService);
-    redis = module.get(Redis);
+    redis = module.get<Redis.Redis>(Redis.Redis);
   });
 
   afterEach(async () => {
@@ -64,7 +70,7 @@ describe('cacheSystem', () => {
     it('should return a value if key exists in cache', async () => {
       redis.set(cache.key, cache.value, 'EX', 60);
 
-      console.log(await service.get(cache.key));
+      console.log(await redis.get(cache.key));
 
       const result = await service.get(cache.key);
 

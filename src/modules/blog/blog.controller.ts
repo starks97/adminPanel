@@ -24,9 +24,20 @@ import { CreatePostDto } from './dto/create-blog.dto';
 import { Request, Response } from 'express';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Permission } from '../auth/decorator/permissio.decorator';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBasicAuth,
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { Category } from '@prisma/client';
 
 @ApiTags('Blog')
 @Controller('blog')
@@ -39,6 +50,44 @@ export class BlogController {
   @UseGuards(RoleGuard)
   @UseInterceptors(FilesInterceptor('files'))
   @Post('/post')
+  @ApiOperation({ summary: 'Create a Post and Resource' })
+  @ApiResponse({ status: 200, description: 'Post created successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request',
+  })
+  @ApiBody({
+    description: 'Post Data',
+    schema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+        },
+        description: { type: 'string' },
+        content: { type: 'string' },
+        tags: { type: 'array', items: { type: 'string' } },
+        category: {
+          type: 'enum',
+          enum: [
+            'GENERAL',
+            'TECHNOLOGY',
+            'SCIENCE',
+            'SPORTS',
+            'ENTERTAINMENT',
+            'POLITICS',
+            'ECONOMY',
+            'HEALTH',
+            'EDUCATION',
+            'OTHER',
+          ],
+        },
+        files: { type: 'array', items: { type: 'string', format: 'binary' } },
+      },
+      required: ['title', 'description', 'content', 'tags', 'category', 'files'],
+    },
+  })
+  @ApiConsumes('multipart/form-data')
   async create(
     @Body() createPostDto: CreatePostDto,
     @Req() req: Request,
@@ -50,12 +99,14 @@ export class BlogController {
     const post = await this.blogService.createPost(user, createPostDto, files);
     return res.status(200).json({ message: 'Post created successfully', post });
   }
+
+  @Get('/post')
+  @ApiOperation({ summary: 'Find Posts by Queries' })
   @ApiQuery({ name: 'offset', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
   @ApiQuery({ name: 'category', type: String, required: false })
   @ApiQuery({ name: 'tags', isArray: true, type: String, required: false })
   @ApiResponse({ status: 200, description: 'Post found successfully' })
-  @Get('/post')
   async findAllPosts(@Query() query: SearchPostDto, @Res() res: Response) {
     const postOffset = +query.offset || 0;
     const postLimit = +query.limit || 10;
@@ -70,6 +121,9 @@ export class BlogController {
   }
 
   @Get('post/:id')
+  @ApiOperation({ summary: 'Find Posts by ID' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'Post found successfully' })
   async findPost(@Param('id') id: string, @Res() res: Response) {
     const response = await this.blogService.findPostById(id);
     return res.status(200).json({ message: 'Post found successfully', response });
@@ -80,6 +134,11 @@ export class BlogController {
   @UseGuards(RoleGuard)
   @UseInterceptors(FilesInterceptor('files'))
   @Patch('/post/:id')
+  @ApiOperation({ summary: 'Update Post and Resources' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiBody({ type: UpdatePostDto, description: 'Post Data' })
+  @ApiResponse({ status: 200, description: 'Post updated successfully' })
+  @ApiConsumes('multipart/form-data')
   async update(
     @Param('id') id: string,
     @Body() updateBlogDto: UpdatePostDto,
@@ -95,6 +154,9 @@ export class BlogController {
   @Permission(['DELETE'])
   @UseGuards(RoleGuard)
   @Delete('/post/:id')
+  @ApiOperation({ summary: 'Delete Post and Resources' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({ status: 200, description: 'Post deleted successfully' })
   async remove(@Param('id') id: string, @Res() res: Response) {
     await this.blogService.deletePost(id);
 
