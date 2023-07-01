@@ -67,39 +67,13 @@ export class SessionManagerService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * # Method: createSessionAndOverride
+   * Create a new session for a user and override existing sessions if the user has more than two
+   * sessions.
    *
-   * ## Description
-   *
-   * This function creates a new session for the specified user and overrides any existing sessions
-   * if the maximum session limit of 2 has been reached. The function uses the Prisma ORM to perform
-   * database operations in a transaction.
-   *
-   * ## Parameters
-   *
-   * @param - **userId**(string): The user's id.
-   *
-   *   - **token**(string): the session token to be created.
-   *
-   *   ## Return
-   * @returns - **session**(Session): A Promise that resolves to a session object containing session
-   *   details, including the associated user details.
-   *
-   *   ## Exceptions
-   *
-   *   ### user_not_found
-   *
-   *   This exception is thrown when the user is not found.
-   *
-   *   ### session_not_found
-   *
-   *   This exception is thrown when the session is not found.
-   *
-   *   ## Dependencies
-   *
-   *   ### PrismaService
-   *
-   *   This service is responsible for managing the database.
+   * @param userId - The ID of the user.
+   * @param token - The token for the new session.
+   * @returns The created session.
+   * @throws Error if the user is not found.
    */
 
   async createSessionAndOverride(userId: string, token: string) {
@@ -142,39 +116,12 @@ export class SessionManagerService {
   }
 
   /**
-   * # Method: updateSession
+   * Update the token for a user session based on the user ID.
    *
-   * ## Description
-   *
-   * This is an asynchronous method that updates the session token of a user with a new value. It
-   * takes in two parameters: userId, which is a string representing the id of the user, and token,
-   * which is a string representing the new session token.
-   *
-   * The method uses the Prisma ORM to perform database operations in a transaction.
-   *
-   * ## Parameters
-   *
-   * @param - **userId**(string): The user's id.
-   *
-   *   - **token**(string): the session token to be created.
-   *
-   *   ## Return
-   * @returns - **session**(Session): A Promise that resolves to a session object containing session
-   *   details, including the associated user details.
-   *
-   *   ## Exceptions
-   *
-   *   ### user_not_found
-   *
-   *   This exception is thrown when the user is not found.
-   *
-   *   ### session_not_updated
-   *
-   *   This exception is thrown when the session is not updated.
-   *
-   *   ## Dependencies
-   *
-   *   ### PrismaService
+   * @param userId - The ID of the user.
+   * @param token - The new token for the session.
+   * @returns The updated session.
+   * @throws Error if the user is not found or the session is not updated.
    */
 
   async updateSession(userId: string, token: string) {
@@ -206,36 +153,11 @@ export class SessionManagerService {
   }
 
   /**
-   * # Method: deleteSession
+   * Delete a session for a user based on the user ID.
    *
-   * ## Description
-   *
-   * This is an asynchronous method that deletes the session of a user. It takes in one parameter:
-   * userId, which is a string representing the id of the user.
-   *
-   * The method uses the Prisma ORM to perform database operations in a transaction.
-   *
-   * ## Parameters
-   *
-   * @param - **userId**(string): The user's id.
-   *
-   *   ## Return
-   * @returns - **session**(Session): A Promise that resolves to a session object containing session
-   *   details, including the associated user details.
-   *
-   *   ## Exceptions
-   *
-   *   ### user_not_found
-   *
-   *   This exception is thrown when the user is not found.
-   *
-   *   ### session_not_deleted
-   *
-   *   This exception is thrown when the session is not deleted.
-   *
-   *   ## Dependencies
-   *
-   *   ### PrismaService
+   * @param userId - The ID of the user.
+   * @returns The deleted session.
+   * @throws Error if the user is not found or the session is not deleted.
    */
 
   async deleteSession(userId: string) {
@@ -264,42 +186,14 @@ export class SessionManagerService {
   }
 
   /**
-   * # Method: findSessionByUser
+   * Find a user session by user ID and token.
    *
-   * ## Description
-   *
-   * This is an asynchronous method that finds a session by user. It takes in two parameters:
-   * userId, which is a string representing the id of the user, and token, which is a string
-   * representing the session token.
-   *
-   * The method uses the Prisma ORM to perform database operations in a transaction.
-   *
-   * ## Parameters
-   *
-   * @param - **userId**(string): The user's id.
-   *
-   *   - **token**(string): the session token to be created.
-   *
-   *   ## Return
-   * @returns - **user**(User): A Promise that resolves to a user object containing user details,
-   *
-   *   Including the associated session details.
-   *
-   *   ## Exceptions
-   *
-   *   ### user_not_found
-   *
-   *   This exception is thrown when the user is not found.
-   *
-   *   ### session_not_found
-   *
-   *   This exception is thrown when the session is not found.
-   *
-   *   ## Dependencies
-   *
-   *   ### PrismaService
+   * @param userId - The ID of the user.
+   * @param token - The token of the session.
+   * @returns The user associated with the session.
+   * @throws ForbiddenException if the user is not found.
+   * @throws Error if the session is not found.
    */
-
   async findSessionByUser(userId: string, token: string) {
     return await this.prisma.$transaction(async ctx => {
       const user = await ctx.user.findUnique({

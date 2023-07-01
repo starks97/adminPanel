@@ -1,24 +1,17 @@
-import { CACHE_MANAGER, CacheModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient, Role, Session, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { Cache } from 'cache-manager';
-import * as redisStore from 'cache-manager-redis-store';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import * as redisMock from 'redis-mock';
 
 import { CacheSystemModule } from './../cache-system/cache-system.module';
 import { CacheSystemService } from './../cache-system/cache-system.service';
-import { CreateUserDto, LoginUserDto, UpdateUserDto, UpdateUserPasswordDto } from './dto';
+import { CreateUserDto, LoginUserDto, UpdateUserPasswordDto } from './dto';
 import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { UserModule } from './user.module';
 import { UserService } from './user.service';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { PrismaService } from '../../../prisma/prisma.service';
-
-export const prismaMock = mockDeep<PrismaClient>() as unknown as DeepMockProxy<{
-  [K in keyof PrismaClient]: Omit<PrismaClient[K], 'groupBy'>;
-}>;
 
 describe('UserService', () => {
   let service: UserService;

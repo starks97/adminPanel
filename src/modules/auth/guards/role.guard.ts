@@ -4,15 +4,34 @@ import { PrismaService } from './../../../../prisma/prisma.service';
 import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Permissions } from '@prisma/client';
-
+/**
+ * RoleGuard is an injectable class that implements the CanActivate interface to provide role-based
+ * authorization for endpoints.
+ */
 @Injectable()
 export class RoleGuard implements CanActivate {
+  /**
+   * Create an instance of the RoleGuard class.
+   *
+   * @param reflector - The reflector instance for metadata retrieval.
+   * @param prisma - The PrismaService instance for interacting with the database.
+   * @param auth - The AuthService instance for token decoding and user retrieval.
+   */
   constructor(
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
   ) {}
-
+  /**
+   * Check if the user has the required permissions to access the requested endpoint.
+   *
+   * @param context - The execution context.
+   * @returns A promise that resolves to a boolean indicating if the user has the required
+   *   permissions.
+   * @throws CustomErrorException if the requested permissions are not found, token is not found,
+   *   user is not found, or user doesn't have enough permission.
+   * @throws ForbiddenException if the token is not found or there is a general authorization error.
+   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
       const requestedPermissions = this.reflector.get<Permissions[]>(

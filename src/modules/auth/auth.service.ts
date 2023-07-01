@@ -56,55 +56,12 @@ export class AuthService {
   ) {}
 
   /**
-   * # Method - SignUp
+   * Sign up a new user with the provided user data.
    *
-   * ## Description:
-   *
-   * An asynchronous method that allows a user to sign up by creating a new user account with the
-   * provided user data. It returns a Promise that resolves to a RegistrationStatus object, which
-   * contains information about the status of the user registration process.
-   *
-   * ## Parameters:
-   *
-   * @example
-   *   ```typescript
-   *   const authService = new AuthService();
-   *   const userData = {
-   *   username: 'john.doe',
-   *   password: 'password123',
-   *   lastName: 'Doe',
-   *   bio: 'Hello, I am John Doe.',
-   *   image: 'profile.jpg',
-   *   birthday: '1990-01-01',
-   *   // Additional properties for user registration
-   *   };
-   *   const registrationStatus = await authService.SignUp(userData);
-   *
-   *   // Access the registration status properties
-   *   console.log(registrationStatus.message); // 'user_created'
-   *   console.log(registrationStatus.data); // { username: 'john.doe', lastName: 'Doe', bio: 'Hello, I am John Doe.', image: 'profile.jpg', birthday: '1990-01-01' }
-   *   console.log(registrationStatus.success); // true
-   *   ```
-   *
-   *
-   *   ## Parameters:
-   *
-   * @param - `userData`: This parameter is responsible for receiving the user's data.
-   *
-   *   ## Return:
-   * @returns - `RegistrationStatus`: This object is responsible for returning the status of the
-   *   user's registration.
-   *
-   *   ## Exceptions:
-   * @throws - `user_not_created`: This exception is thrown when the user is not created.
-   *
-   *   ## Links:
-   * @see {@link UserService}
-   * @see {@link RegistrationStatus}
-   * @see {@link CreateUserDto}
-   * @see {@link ForbiddenException}
+   * @param userData - The user data for registration.
+   * @returns The registration status with the created user data.
+   * @throws ForbiddenException if the user creation fails.
    */
-
   async SignUp(userData: CreateUserDto): Promise<RegistrationStatus> {
     const user = await this.userService.createUser(userData);
 
@@ -123,7 +80,14 @@ export class AuthService {
       success: true,
     };
   }
-
+  /**
+   * Sign in a user with the provided email and password.
+   *
+   * @param email - The email of the user.
+   * @param password - The password of the user.
+   * @returns The login status containing access and refresh tokens.
+   * @throws ForbiddenException if the user is not found.
+   */
   async SignIn({ email, password }: LoginUserDto): Promise<LoginStatus> {
     const user = await this.userService.FindByLogin({ email, password });
 
@@ -147,6 +111,13 @@ export class AuthService {
     };
   }
 
+  /**
+   * Refreshes the authentication token for a user session.
+   *
+   * @param userId - The ID of the user.
+   * @param token - The current authentication token.
+   * @returns The new authentication token.
+   */
   async refreshToken(userId: string, token: string) {
     const userSession = await this.session.findSessionByUser(userId, token);
 
@@ -159,16 +130,32 @@ export class AuthService {
 
     return tokens.authToken;
   }
-
+  /**
+   * Deletes a user session based on the user ID.
+   *
+   * @param userId - The ID of the user whose session will be deleted.
+   * @returns The deleted user session.
+   */
   async deleteUserSession(userId: string) {
     const userSession = await this.session.deleteSession(userId);
     return userSession;
   }
-
+  /**
+   * Decodes a JWT token and retrieves the payload data.
+   *
+   * @param token - The JWT token to be decoded.
+   * @returns The decoded payload as an object of type `JWTPayload`.
+   */
   _decodeToken(token: string) {
     return this.jwtService.decode(token) as JWTPayload;
   }
 
+  /**
+   * Generates authentication and refresh tokens based on the given payload.
+   *
+   * @param payload - The payload containing the data to be included in the tokens.
+   * @returns An object containing the authentication and refresh tokens.
+   */
   private async _createTokens(payload: JWTPayload) {
     const [authToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {

@@ -8,9 +8,18 @@ import { CustomErrorException, errorCases, PostNotFoundError } from '../utils';
 import { Post, Prisma } from '@prisma/client';
 
 import { ResourcesService } from './resources/resources.service';
-
+/** BlogService is an injectable class that provides methods for managing blog posts. */
 @Injectable()
 export class BlogService {
+  /**
+   * Create an instance of the BlogService class.
+   *
+   * @param prisma - The PrismaService instance for interacting with the database.
+   * @param cache - The CacheSystemService instance for caching blog posts.
+   * @param cloudinary - The CloudinarySystemService instance for uploading images.
+   * @param resource - The ResourcesService instance for managing resources associated with blog
+   *   posts.
+   */
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheSystemService,
@@ -23,7 +32,17 @@ export class BlogService {
       },
     });
   }
-
+  /**
+   * Create a new blog post.
+   *
+   * @param userId - The ID of the user creating the post.
+   * @param createPostDto - The DTO containing the details of the post to be created.
+   * @param files - An array of files to be uploaded and associated with the post.
+   * @returns A promise that resolves to the created post or a CustomErrorException if an error
+   *   occurs.
+   * @throws CustomErrorException if the post with the same title already exists or there is a
+   *   general error.
+   */
   async createPost(
     userId: string,
     createPostDto: CreatePostDto,
@@ -91,7 +110,14 @@ export class BlogService {
       throw e;
     }
   }
-
+  /**
+   * Retrieve all blog posts with pagination.
+   *
+   * @param offset - The number of posts to skip.
+   * @param limit - The maximum number of posts to return.
+   * @returns A promise that resolves to an object containing the posts and the total count.
+   * @throws PostNotFoundError if there is a general error.
+   */
   async findAllPosts(offset: number, limit: number) {
     const cacheKey = `blog:offset:${offset}:limit:${limit}`;
     const dataFromCacheShield = await this.cache.cachePagination({
@@ -132,7 +158,14 @@ export class BlogService {
       throw e;
     }
   }
-
+  /**
+   * Retrieve a blog post by its ID.
+   *
+   * @param id - The ID of the post to retrieve.
+   * @returns A promise that resolves to the retrieved post.
+   * @throws PostNotFoundError if the specified post is not found.
+   * @throws CustomErrorException if there is a general error.
+   */
   async findPostById(id: string) {
     const dataCache = JSON.parse(await this.cache.get('blog:' + id));
     if (dataCache) return dataCache;
@@ -160,7 +193,14 @@ export class BlogService {
       throw e;
     }
   }
-
+  /**
+   * Retrieve blog posts based on a search query.
+   *
+   * @param query - The search query parameters.
+   * @returns A promise that resolves to an object containing the matching posts and the total
+   *   count.
+   * @throws CustomErrorException if there is a general error.
+   */
   async findPostByQuery(query: SearchPostDto) {
     const { category, limit, offset, tags } = query;
 
@@ -222,7 +262,16 @@ export class BlogService {
       throw e;
     }
   }
-
+  /**
+   * Update a blog post by its ID.
+   *
+   * @param id - The ID of the post to update.
+   * @param updatePostDto - The updated post data.
+   * @param files - Optional array of files to upload.
+   * @returns A promise that resolves to the updated post.
+   * @throws PostNotFoundError if the specified post is not found.
+   * @throws CustomErrorException if there is a general error.
+   */
   async updatePost(id: string, updatePostDto: UpdatePostDto, files?: Array<Express.Multer.File>) {
     const cloud = files && files.length > 0 ? await this.cloudinary.upload(files) : undefined;
 
@@ -281,6 +330,14 @@ export class BlogService {
     }
   }
 
+  /**
+   * Delete a blog post by its ID.
+   *
+   * @param id - The ID of the post to delete.
+   * @returns A promise that resolves to the deleted post.
+   * @throws PostNotFoundError if the specified post is not found.
+   * @throws CustomErrorException if there is a general error.
+   */
   async deletePost(id: string) {
     try {
       const data = await this.prisma.$transaction(async ctx => {

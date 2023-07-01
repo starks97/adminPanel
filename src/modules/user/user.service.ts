@@ -9,92 +9,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
 
-/**
- * # User Service
- *
- * ## Description
- *
- * This is a **TypeScript** class that provides methods to create, read, update, and delete user
- * data. It takes three dependencies as arguments: **PrismaService**, **CacheSystemService**, and
- * **PassHasherService**.
- *
- * ## Methods
- *
- * - CreateUser
- * - UpdateUser
- * - DeleteUser
- * - FindByLogin
- * - FindUserById
- *
- * ## Constructor
- *
- * The constructor initializes the **UserService** instance with the following dependencies:
- *
- * - **prisma**(**Prismaservice**): A service that provides access to the Prisma ORM for database
- *   operations.
- * - **cache**(**CacheSystemService**): A service that provides methods for caching data in a store.
- * - **passwordHasher**(**PassHasherService**): A service that provides methods for hashing and
- *
- * ## Usage
- *
- * @module User
- * @version 1.0.0
- * @category User
- * @example
- *   ```typescript
- *   import { Injectable } from '@nestjs/common';
- *   import { PrismaService } from '../../../prisma/prisma.service';
- *   import { CreateUserDto, LoginUserDto, UpdateUserDto } from './dto';
- *   import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
- *   import { PassHasherService } from './pass-hasher/pass-hasher.service';
- *   import { CacheSystemService } from '../cache-system/cache-system.service';
- *   ```
- *
- *   ## Notes
- *
- *   - The **CacheSystemService** class is used to cache data in a store.
- *   - The **PassHasherService** class is used to hash and compare passwords.
- *   - The **PrismaService** class is used to interact with the database.
- *   - The **CreateUserDto** class is used to validate the data passed to the **CreateUser** method.
- *   - The **LoginUserDto** class is used to validate the data passed to the **FindByLogin** method.
- *   - The **UpdateUserDto** class is used to validate the data passed to the **UpdateUser** method.
- *   - The **UpdateUserPasswordDto** class is used to validate the data passed to the
- *   **UpdateUserPassword** method.
- *   - The **User** interface is used to define the structure of the data returned by the
- *   **FindUserById** method.
- *   - The **CreateUser** method is used to create a new user.
- *   - The **UpdateUser** method is used to update a user's data.
- *   - The **DeleteUser** method is used to delete a user.
- *   - The **FindByLogin** method is used to find a user by their email address.
- *   - The **FindUserById** method is used to find a user by their id.
- *   - The **UpdateUserPassword** method is used to update a user's password.
- *
- * @class
- * @param {PrismaService} prisma - Prisma Service
- * @param {CacheSystemService} cache - Cache System Service
- * @param {PassHasherService} passwordHasher - Password Hasher Service
- * @returns {UserService} - User Service
- * @subcategory Service
- * @classdesc User Service
- *
- * ## Links
- * @see {@link CreateUserDto}
- * @see {@link LoginUserDto}
- * @see {@link UpdateUserDto}
- * @see {@link UpdateUserPasswordDto}
- * @see {@link PassHasherService}
- * @see {@link PrismaService}
- * @see {@link CacheSystemService}
- * @see {@link User}
- * @see {@link createUser}
- * @see {@link DeleteUser}
- * @see {@link FindByLogin}
- * @see {@link FindUserById}
- * @see {@link FindUserByEmailorName}
- * @see {@link FindAllUsers}
- * @see {@link findUserByEmail}
- * @see {@link UpdateUserPassword}
- */
 @Injectable()
 export class UserService {
   constructor(
@@ -112,36 +26,13 @@ export class UserService {
   }
 
   /**
-   * # Method: CreateUser
+   * Create a new user.
    *
-   * ## Description
-   *
-   * This method is used to create a new user. It takes a **CreateUserDto** object as an argument.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const createUserDto: CreateUserDto = {
-   *   name: 'John Doe',
-   *   email: 'johndoe@example.com',
-   *   password: 'password123',
-   *   };
-   *
-   *   try {
-   *   const newUser = await userService.createUser(createUserDto);
-   *   console.log(`Created user with id ${newUser.id}`);
-   *   } catch (error) {
-   *   console.error(`Failed to create user: ${error.message}`);
-   *   }
-   *   ```
-   *
-   *   ## Params
-   *
-   * @param {CreateUserDto} createUser - Create User DTO
-   *
-   *   ## Links
-   * @see {@link CreateUserDto}
+   * @param createUserDto - The data for creating a new user.
+   * @returns A promise that resolves to the created user.
+   * @throws HttpException if a user with the same email already exists.
+   * @throws CustomErrorException if the user cannot be created.
+   * @throws UserErrorHandler if an error occurs during the creation process.
    */
 
   async createUser(createUser: CreateUserDto) {
@@ -202,38 +93,13 @@ export class UserService {
       throw e;
     }
   }
-
   /**
-   * # Method: FindByLogin
+   * Find a user by login credentials (email and password).
    *
-   * ## Description
-   *
-   * This method is used to find a user by their email address and password. It takes a
-   * **LoginUserDto** object as an argument.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const loginUserDto: LoginUserDto = {
-   *   email: 'johndoe@example.com',
-   *   password: 'password123',
-   *   };
-   *
-   *   try {
-   *   const logUser = await userService.FindByLogin(loginUserDto);
-   *   console.log(`Found user with id ${logUser.id}`);
-   *   } catch (error) {
-   *   console.error(`Failed to find user: ${error.message}`);
-   *   }
-   *   ```
-   *
-   *   ## Params
-   *
-   * @param {LoginUserDto} loginUser - Login User DTO
-   *
-   *   ## Links
-   * @see {@link LoginUserDto}
+   * @param loginUserDto - The login credentials (email and password).
+   * @returns A promise that resolves to the found user.
+   * @throws HttpException if the user is not found or the password is incorrect.
+   * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
   async FindByLogin({ email, password }: LoginUserDto) {
     try {
@@ -270,28 +136,12 @@ export class UserService {
   }
 
   /**
-   * # Method: FindUserById
+   * Find a user by ID.
    *
-   * ## Description
-   *
-   * This method is used to find a user by their id. It takes a string as an argument.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const id = '123456789';
-   *   try {
-   *   const user = await userService.FindUserById(id);
-   *   console.log(`Found user with id ${user.id}`);
-   *   } catch (error) {
-   *   console.error(`Failed to find user: ${error.message}`);
-   *   }
-   *   ```
-   *
-   *   ## Params
-   *
-   * @param {string} id - User Id
+   * @param id - The ID of the user.
+   * @returns A promise that resolves to the found user.
+   * @throws NotFoundException if the user is not found.
+   * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
 
   async FindUserById(id: string) {
@@ -326,31 +176,13 @@ export class UserService {
   }
 
   /**
-   * # Method: FindUserByEmailorName
+   * Find users by name with pagination.
    *
-   * ## Description
-   *
-   * This method is used to find a user by their email or name. It takes a string as an argument.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const q = 'something';
-   *   try {
-   *   const user = await userService.FindUserByEmailorName(q);
-   *   console.log(`Found user with id ${user.id}`);
-   *   } catch (error) {
-   *   console.error(`Failed to find user: ${error.message}`);
-   *   }
-   *   ```
-   *
-   *   ## Params
-   *
-   * @param {string} q - Query string
-   *
-   *   ## Exceptions
-   * @throws {HttpException} User_not_found - User not found
+   * @param q - The search query.
+   * @param offset - The number of items to skip.
+   * @param limit - The maximum number of items to retrieve.
+   * @returns A promise that resolves to an object containing the users and the total count.
+   * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
 
   async FindUserByName(q: string, offset: number, limit: number) {
@@ -400,29 +232,13 @@ export class UserService {
   }
 
   /**
-   * # Method: FindAllUsers
+   * Find all users with pagination.
    *
-   * ## Description
-   *
-   * This method is used to find all users. It takes no arguments.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   try {
-   *   const users = await userService.FindAllUsers();
-   *   console.log(`Found ${users.length} users`);
-   *   } catch (error) {
-   *   console.error(`Failed to find users: ${error.message}`);
-   *   }
-   *   ```
-   *
-   *   ## Returns
-   *
-   * @returns {Promise<{users: User[] | total: number}>} - Array of users and total number of users
+   * @param offset - The number of items to skip.
+   * @param limit - The maximum number of items to retrieve.
+   * @returns A promise that resolves to an object containing the users and the total count.
+   * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
-
   async FindAllUsers(offset: number, limit: number) {
     const cacheKey = `user:${offset}:${limit}`;
     const dataCache = await this.cache.cachePagination({
@@ -472,44 +288,12 @@ export class UserService {
   }
 
   /**
-   * # Method: AssignRoleToUser
+   * Assign a role to a user.
    *
-   * ## Description
-   *
-   * This method is used to assign a role to a user. It takes a string and an object as arguments.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const id = '123456789';
-   *   const roleName = 'ADMIN';
-   *   try {
-   *   const user = await userService.AssignRoleToUser(id, roleName);
-   *   console.log(`Assigned role ${roleName} to user with id ${user.id}`);
-   *   } catch (error) {
-   *   console.error(`Failed to assign role to user: ${error.message}`);
-   *   }
-   *   ```
-   *
-   *   ## Params
-   *
-   * @param {string} id - User Id
-   * @param {string} roleName - Role Name
-   *
-   *   ## Returns
-   * @returns {Promise<User>} - User
-   *
-   *   ## Exceptions
-   * @throws {HttpException} User_not_found - User not found
-   * @throws {HttpException} Role_not_found - Role not found
-   *
-   *   ## Links
-   * @see {@link FindUserById}
-   * @see {@link FindRoleByName}
-   * @see {@link UpdateUser}
-   * @see {@link CacheSystemService}
-   * @see {@link User}
+   * @param userId - The ID of the user.
+   * @param roleName - The name of the role to assign.
+   * @returns A promise that resolves to the updated user.
+   * @throws CustomErrorException if the user or role is not found.
    */
 
   async AssignRoleToUser(userId: string, roleName: string) {
@@ -578,36 +362,12 @@ export class UserService {
   }
 
   /**
-   * # Method: DeleteUser
+   * Delete a user.
    *
-   * ## Description
-   *
-   * This method is used to delete a user. It takes a string as an argument.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const id = '123456789';
-   *   try {
-   *   const user = await userService.DeleteUser(id);
-   *   console.log(`Deleted user with id ${user.id}`);
-   *   } catch (error) {
-   *   console.error(`Failed to delete user: ${error.message}`);
-   *   }
-   *   ```
-   *
-   *   ## Params
-   *
-   * @param {string} id - User Id
-   *
-   *   ## Returns
-   * @returns {User} - User deleted
-   *
-   *   ## Exceptions
-   * @throws {HttpException} User_not_deleted - User not deleted
+   * @param id - The ID of the user to delete.
+   * @returns A promise that resolves to the deleted user.
+   * @throws CustomErrorException if the user is not deleted.
    */
-
   async DeleteUser(id: string) {
     try {
       const deletedUser = await this.prisma.user.delete({
@@ -642,36 +402,14 @@ export class UserService {
   }
 
   /**
-   * # Method: UpdateUserPassword
+   * Update a user's password.
    *
-   * ## Description
-   *
-   * This method is used to update a user password. It takes a string and an object as arguments.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const id = '123456789';
-   *   const pass = { password: 'newpassword' };
-   *   try {
-   *   const user = await userService.UpdateUserPassword(id, pass);
-   *   console.log(`Updated user password with id ${user.id}`);
-   *   } catch (error) {
-   *   console.error(`Failed to update user password: ${error.message}`);
-   *   }
-   *   ```
-   *
-   *   ## Params
-   *
-   * @param {string} id - User Id
-   * @param {UpdateUserPasswordDto} pass - User password
-   *
-   *   ## Returns
-   * @returns {Promise<User>} - User
-   *
-   *   ## Exceptions
-   * @throws {HttpException} User_not_updated - User not updated
+   * @param id - The ID of the user.
+   * @param pass - The updated password information.
+   * @returns A promise that resolves to the updated user.
+   * @throws UserErrorHandler if the user is not found.
+   * @throws CustomErrorException if the provided old password is incorrect or if the user is not
+   *   updated.
    */
 
   async UpdateUserPassword(id: string, pass: UpdateUserPasswordDto) {
@@ -740,36 +478,12 @@ export class UserService {
   }
 
   /**
-   * # Method: findUserByEmail
+   * Find a user by their email address.
    *
-   * ## Description
-   *
-   * This method is used to find a user by email. It takes a string as an argument.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const email = 'example@example.com';
-   *   try {
-   *   const user = await userService.findUserByEmail(email);
-   *   console.log(`Found user with email ${user.email}`);
-   *   } catch (error) {
-   *   console.error(`Failed to find user: ${error.message}`);
-   *   }
-   *   ```
-   *
-   *   ## Params
-   *
-   * @param {string} email - User email
-   *
-   *   ## Returns
-   * @returns {User | null} - User or null
-   *
-   *   ## Exceptions
-   * @throws {HttpException} User_not_found - User not found *
+   * @param email - The email address of the user to find.
+   * @returns A promise that resolves to the found user.
+   * @throws CustomErrorException if the user is not found.
    */
-
   async findUserByEmail(email: string) {
     const dataCache = JSON.parse(await this.cache.get('user:' + email));
 
@@ -803,7 +517,15 @@ export class UserService {
       throw e;
     }
   }
-
+  /**
+   * Create or update a user profile with the provided data.
+   *
+   * @param profile - The profile data to be updated or created.
+   * @param id - The ID of the user associated with the profile.
+   * @param file - Optional file to upload for the user's profile image.
+   * @returns A promise that resolves to the updated or created user profile.
+   * @throws CustomErrorException if the user profile is not created or updated.
+   */
   async createUserProfile(profile: ProfileUserDto, id: string, file?: Express.Multer.File) {
     const cloud = !file ? undefined : await this.cloud.uploadSingle(file);
     try {

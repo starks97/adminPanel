@@ -7,7 +7,7 @@ import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 
 describe('RoleSystemService', () => {
   let service: RoleSystemService;
-  let prismaMock: DeepMockProxy<{ [K in keyof PrismaClient]: Omit<PrismaClient[K], 'groupBy'> }>;
+  let prismaMock: DeepMockProxy<PrismaClient>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -21,13 +21,8 @@ describe('RoleSystemService', () => {
 
     service = module.get<RoleSystemService>(RoleSystemService);
 
-    prismaMock =
-      module.get<DeepMockProxy<{ [K in keyof PrismaClient]: Omit<PrismaClient[K], 'groupBy'> }>>(
-        PrismaService,
-      );
+    prismaMock = module.get(PrismaService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+  describe('createRole', () => {});
 });

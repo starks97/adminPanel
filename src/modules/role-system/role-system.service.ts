@@ -9,6 +9,14 @@ import { Prisma } from '@prisma/client';
 @Injectable()
 export class RoleSystemService {
   constructor(private readonly prisma: PrismaService) {}
+  /**
+   * Create a new role with the specified name and permissions.
+   *
+   * @param createRoleSystemDto - The DTO (Data Transfer Object) containing the role information.
+   * @returns A promise that resolves to the created role.
+   * @throws ForbiddenException if a role with the same name already exists.
+   * @throws CustomErrorException if the role creation fails.
+   */
   async createRole(createRoleSystemDto: CreateRoleSystemDto) {
     const { name, permissions } = createRoleSystemDto;
 
@@ -37,7 +45,11 @@ export class RoleSystemService {
 
     return role;
   }
-
+  /**
+   * Retrieve all roles from the database.
+   *
+   * @returns A promise that resolves to an array of roles.
+   */
   async findAllRoles() {
     const roles = await this.prisma.role.findMany({
       select: {
@@ -54,6 +66,13 @@ export class RoleSystemService {
     return data ?? [];
   }
 
+  /**
+   * Find a role by its name in the database.
+   *
+   * @param name - The name of the role to find.
+   * @returns A promise that resolves to the found role.
+   * @throws CustomErrorException if the role is not found or an error occurs during the retrieval.
+   */
   async findRoleByName(name: string) {
     try {
       const role = await this.prisma.role.findUnique({
@@ -84,7 +103,13 @@ export class RoleSystemService {
       }
     }
   }
-
+  /**
+   * Find a role by its ID in the database.
+   *
+   * @param id - The ID of the role to find.
+   * @returns A promise that resolves to the found role.
+   * @throws CustomErrorException if the role is not found.
+   */
   async findRoleById(id: string) {
     const role = await this.prisma.role.findUnique({
       where: {
@@ -101,7 +126,14 @@ export class RoleSystemService {
 
     return role;
   }
-
+  /**
+   * Update a role in the database based on its ID.
+   *
+   * @param id - The ID of the role to update.
+   * @param updateRoleDto - The DTO containing the updated role data.
+   * @returns A promise that resolves to the updated role.
+   * @throws CustomErrorException if the role is not updated.
+   */
   async updateRole(id: string, updateRoleDto: UpdateRoleSystemDto) {
     const { name, permissions } = updateRoleDto;
     const role = await this.prisma.role.update({
@@ -126,7 +158,13 @@ export class RoleSystemService {
 
     return role;
   }
-
+  /**
+   * Delete a role from the database based on its ID.
+   *
+   * @param id - The ID of the role to delete.
+   * @returns A promise that resolves to the deleted role.
+   * @throws CustomErrorException if the role is not deleted.
+   */
   async deleteRole(id: string) {
     const role = await this.prisma.role.delete({
       where: {

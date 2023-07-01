@@ -20,17 +20,21 @@ export interface CachePagProps<T> extends Omit<CacheStateProps<T>, 'model' | 'ex
 }
 
 /**
- * # Cache System Service!
+ * # Cache System Service
  *
  * ## Description
  *
- * This service provides methods for caching data in a store.
+ * The CacheSystemService class provides methods for caching and retrieving data using Redis. It
+ * also allows configuring cache options for Prisma models and managing cache keys.
  *
  * ## Methods
  *
  * - Get
  * - Set
- * - CacheStateManager
+ * - CacheState
+ * - _configModel
+ * - CachePagination
+ * - CacheInvalidation
  *
  * ## Options
  *
@@ -62,33 +66,11 @@ export interface CachePagProps<T> extends Omit<CacheStateProps<T>, 'model' | 'ex
  * @see {@link set}
  * @see {@link cacheState}
  * @see {@link _configModel}
+ * @see {@link cachePagination}
+ * @see {@link cacheInvalidation}
  */
 @Injectable()
 export class CacheSystemService {
-  /**
-   * # Variable: options!
-   *
-   * ## Description
-   *
-   * The **Options** variable is an instance of a **Map** object used to store key-value pairs
-   * representing various options that can be used in a particular context.
-   *
-   * ## Usage
-   *
-   * The **Options** object can be used to store and retrieve options for use in a particular
-   * context. Each option is represented as a key-value pair, where the key is a string representing
-   * the name of the option and the value is any value that is appropriate for the option.
-   *
-   * @example
-   *   ```typescript
-   *   this.options.set('ttl', 1000);
-   *   ```
-   *   ## Notes
-   *
-   * @notes - The **Map** object is a built-in object in JavaScript that provides an easy-to-use interface for storing and retrieving key-value pairs.
-   * - The **Options** object can be used in any context where options need to be stored and retrieved, such as configuration settings, user preferences, or application state.
-   */
-
   options = new Map<string, any>();
   private readonly redis: Redis;
 
@@ -97,39 +79,13 @@ export class CacheSystemService {
   }
 
   /**
-   * # Get Cache!
+   * Retrieve a value from the cache based on the specified key.
    *
-   * ## Description
-   *
-   * This method retrieves a value from the cache store using a specified key.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const cache = new CacheManager();
-   *   await cache.set('my-key', { foo: 'bar' }, 60);
-   *   const result = await cache.get('my-key'); // result: { foo: 'bar' }
-   *
-   *   ```
-   *
-   *   ## Parameters
-   *
-   * @param - Key: A string representing the key to use when retrieving the data.
-   *
-   *   ## Returns
-   * @returns This method returns a Promise that resolves to the cached value associated with the
-   *   provided key. If the key does not exist in the cache, the method will return
-   *
-   *   **Undefined**.
-   *
-   *   ## Errors
-   * @errors If the key parameter is not provided, this method throws an Error with a corresponding message.
-   *
-   * ## Notes
-   * @note Cached data is stored in memory and will be lost if the application is restarted.
+   * @param key - The key associated with the value in the cache.
+   * @returns A promise that resolves to the retrieved value, or `undefined` if the key is not found
+   *   in the cache.
+   * @throws Error if the key is not provided.
    */
-
   async get(key: string) {
     if (!this.cache) return;
     if (!key || typeof key === undefined) throw new Error('Key is required');
@@ -137,39 +93,14 @@ export class CacheSystemService {
   }
 
   /**
-   * # Set Cache!
+   * Set a value in the cache with the specified key and time-to-live (TTL) in seconds.
    *
-   * ## Description
-   *
-   * This method sets a key-value pair in the cache store.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const cache = new CacheManager();
-   *   await cache.set('my-key', { foo: 'bar' }, 60);
-   *
-   *
-   *   ```
-   *
-   *   ## Parameters
-   *
-   * @param - Key: A string representing the key to use when caching the data.
-   *
-   *   - Value: A string representing the value to cache.
-   *   - TTL: A number representing the time to live for the cached data.
-   *
-   *   ## Returns
-   * @returns A boolean representing the success of the operation.
-   *
-   *   ## Errors
-   * @errors - If the key or ttl parameters are not provided, this method throws an Error with a corresponding message.
-   *
-   * ## Notes
-   * @note - Cached data is stored in memory and will be lost if the application is restarted.
+   * @param key - The key to associate with the value.
+   * @param value - The value to be stored in the cache.
+   * @param ttl - The time-to-live (TTL) in seconds for the cached value.
+   * @returns A promise that resolves when the value has been successfully set in the cache.
+   * @throws Error if the key or TTL is not provided.
    */
-
   async set(key: string, value: any, ttl: number) {
     if (!key) throw new Error('Key is required');
 
@@ -179,43 +110,12 @@ export class CacheSystemService {
   }
 
   /**
-   * # Cache State Manager!
+   * Cache the state of a specific Prisma model.
    *
-   * ## Description
-   *
-   * This method retrieves data from a Prisma model and caches it in a store using a specified key.
-   * The cached data is stored for a fixed duration of 1000ms, after which it is invalidated and the
-   * next retrieval will trigger a new cache.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const data = await this.cacheSystemService.cacheState({
-   *   model: 'user',
-   *   storeKey: 'users',
-   *   exclude: ['password', 'email', 'roleName']
-   *   offset: 0,
-   *   limit: 10
-   *   })
-   *
-   *   ```
-   *
-   *   ## Parameters
-   *
-   * @param - Model: A string representing the name of the Prisma model to query.
-   *
-   *   - StoreKey: A string representing the key to use when caching the data.
-   *   - Exclude: An array of strings representing the keys to exclude from the cached data.
-   *
-   *   ## Returns
-   * @returns An array of objects representing the data retrieved from the Prisma model, or
-   *   **Null**.
-   *
-   *   ## Notes
-   * @note - This method uses the findMany() method provided by Prisma to retrieve data from the specified model.
-   * - The exclude parameter is useful when sensitive data should not be cached, such as passwords or API keys.
-   * - Cached data is stored in memory and will be lost if the application is restarted.
+   * @param model - The name of the Prisma model.
+   * @param storeKey - The key under which to store the cached data.
+   * @param exclude - An optional array of keys to exclude from the cached data.
+   * @returns The cached data.
    */
 
   async cacheState<T>({ model, storeKey, exclude }: CacheStateProps<T>) {
@@ -241,38 +141,24 @@ export class CacheSystemService {
   }
 
   /**
-   * # Config Model!
+   * Configure options for a specific Prisma model.
    *
-   * ## Description
-   *
-   * This method is used to configure **Options** for a particular Prisma model. It takes in the
-   * name of the model and a set of options and stores them in the options object.
-   *
-   * ## Usage
-   *
-   * @example
-   *   ```typescript
-   *   const options = {
-   *   someOption: 'value',
-   *   anotherOption: true,
-   *   };
-   *   _configModel('user', options);
-   *   ```
-   *
-   *   ## Parameters
-   *
-   * @param - Model: A string representing the name of the Prisma model to query.
-   *
-   *   - Options: An object representing the options to use when querying the model.
-   *
-   *   ## Returns
-   * @returns This method does not return a value.
+   * @param model - The name of the Prisma model to configure (in lowercase).
+   * @param options - The options to set for the model.
    */
-
   _configModel(model: Uncapitalize<Prisma.ModelName>, options: any) {
     this.options.set(model, options);
   }
-
+  /**
+   * Cache and retrieve paginated data from the cache.
+   *
+   * @param limit - The limit of items per page.
+   * @param newKey - The new key for the paginated data.
+   * @param storeKey - The key of the stored data to paginate.
+   * @param offset - The offset of the pagination.
+   * @returns The paginated data retrieved from the cache, or `null` if the data is not found.
+   * @throws HttpException if there is an error retrieving or caching the pagination data.
+   */
   async cachePagination<T>({ limit, newKey, storeKey, offset }: CachePagProps<T>) {
     const dataString = JSON.parse(await this.redis.get(`${newKey}:${offset}:${limit}`));
 
@@ -297,7 +183,14 @@ export class CacheSystemService {
       );
     }
   }
-
+  /**
+   * Delete keys from the cache that match a specified pattern.
+   *
+   * @param pattern - The pattern of keys to delete.
+   * @returns A promise that resolves to `true` if the keys were successfully deleted, or `false` if
+   *   not.
+   * @throws HttpException if the pattern is not provided, or there is an error deleting keys.
+   */
   async cacheInValidation(pattern: string) {
     if (!pattern)
       throw new HttpException(
