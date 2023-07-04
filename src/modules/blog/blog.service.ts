@@ -118,7 +118,7 @@ export class BlogService {
    * @returns A promise that resolves to an object containing the posts and the total count.
    * @throws PostNotFoundError if there is a general error.
    */
-  async findAllPosts(offset: number, limit: number) {
+  async findAllPosts(offset?: number, limit?: number) {
     const cacheKey = `blog:offset:${offset}:limit:${limit}`;
     const dataFromCacheShield = await this.cache.cachePagination({
       limit,
@@ -132,7 +132,7 @@ export class BlogService {
 
     const dataWhithout = JSON.parse(await this.cache.get(cacheKey));
 
-    if (dataWhithout) return { posts: dataWhithout.posts, total: dataWhithout.total };
+    if (dataWhithout) return { posts: dataWhithout, total: dataWhithout.length };
     try {
       const posts = await this.prisma.post.findMany({
         skip: offset,

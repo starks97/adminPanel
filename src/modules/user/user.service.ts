@@ -185,7 +185,7 @@ export class UserService {
    * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
 
-  async FindUserByName(q: string, offset: number, limit: number) {
+  async FindUserByName(q: string, offset?: number, limit?: number) {
     const dataCache = JSON.parse(await this.cache.get(`user:${q}:offset:${offset}:limit:${limit}`));
 
     if (dataCache) return { users: dataCache, total: dataCache.length };
@@ -239,7 +239,7 @@ export class UserService {
    * @returns A promise that resolves to an object containing the users and the total count.
    * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
-  async FindAllUsers(offset: number, limit: number) {
+  async FindAllUsers(offset?: number, limit?: number) {
     const cacheKey = `user:${offset}:${limit}`;
     const dataCache = await this.cache.cachePagination({
       limit,

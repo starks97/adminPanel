@@ -117,6 +117,7 @@ export class BlogController {
     }
 
     const posts = await this.blogService.findAllPosts(postOffset, postLimit);
+
     return res.status(200).json({ message: 'Post found successfully', data: posts });
   }
 

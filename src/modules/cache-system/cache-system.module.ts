@@ -9,8 +9,9 @@ import { PrismaModule } from '../../../prisma/prisma.module';
     RedisModule.forRoot({
       readyLog: true,
       config: {
-        namespace: DEFAULT_REDIS_NAMESPACE,
-        maxRetriesPerRequest: 3,
+        host: process.env.REDIS_URL,
+        port: parseInt(process.env.REDIS_PORT),
+        password: process.env.REDIS_PASSWORD,
       },
     }),
     PrismaModule,

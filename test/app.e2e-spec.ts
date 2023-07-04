@@ -18,4 +18,15 @@ describe('AppController (e2e)', () => {
   it('/ (GET)', () => {
     return request(app.getHttpServer()).get('/').expect(200).expect('Hello World!');
   });
+
+  it('/auth/signin (POST)', () => {
+    return request(app.getHttpServer()).post('/auth/signin').send({
+      email: 'david@davi.com',
+      password: 'davidelpro2',
+    });
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
 });

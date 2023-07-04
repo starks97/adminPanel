@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient, Role, Session, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import * as redisMock from 'redis-mock';
 
 import { CacheSystemModule } from './../cache-system/cache-system.module';
 import { CacheSystemService } from './../cache-system/cache-system.service';
@@ -13,10 +12,14 @@ import { UserService } from './user.service';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { PrismaService } from '../../../prisma/prisma.service';
 
+import Redis from 'ioredis-mock';
+import { CloudinarySystemModule } from '../cloudinary/cloudinary-system.module';
+const redisMock = new Redis();
+
 describe('UserService', () => {
   let service: UserService;
   let prismaMock: DeepMockProxy<{ [K in keyof PrismaClient]: Omit<PrismaClient[K], 'groupBy'> }>;
-  let cacheService: Cache;
+  let cache: CacheSystemService;
 
   const mockedUser = {
     id: '1234',
@@ -34,30 +37,15 @@ describe('UserService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        PrismaModule,
-        CacheSystemModule,
-        UserModule,
-        CacheModule.register({
-          store: redisStore,
-        }),
-      ],
+      imports: [PrismaModule, CacheSystemModule, UserModule, CloudinarySystemModule],
       providers: [
         UserService,
         PrismaService,
         CacheSystemService,
         PassHasherService,
         {
-          provide: CACHE_MANAGER,
-          useValue: {
-            store: redisStore,
-            host: 'localhost',
-            port: 6379,
-            ttl: 180,
-            create: () => {
-              return redisMock.createClient();
-            },
-          },
+          provide: Redis,
+          useValue: redisMock,
         },
       ],
     })
@@ -73,11 +61,11 @@ describe('UserService', () => {
         PrismaService,
       );
 
-    cacheService = module.get<Cache>(CACHE_MANAGER);
+    cache = module.get(Redis);
   });
 
   afterEach(async () => {
-    await cacheService.store.reset();
+    await redisMock.flushall();
   });
 
   describe('createUser', () => {
@@ -161,9 +149,9 @@ describe('UserService', () => {
     });
 
     it('should check if the user is in cache', async () => {
-      await cacheService.set('1234', mockedUser, 60);
+      await cache.set('1234', mockedUser, 60);
 
-      expect(await cacheService.get('1234')).toStrictEqual({
+      expect(await cache.get('1234')).toStrictEqual({
         ...mockedUser,
         createdAt: mockedUser.createdAt.toISOString(),
         updatedAt: mockedUser.updatedAt.toISOString(),
@@ -172,18 +160,18 @@ describe('UserService', () => {
     });
   });
 
-  describe('find user by email or name', () => {
-    it('should find a user by email or name', async () => {
+  describe('find user by Name', () => {
+    it('should find a user by  name', async () => {
       prismaMock.user.findFirst.mockResolvedValue(mockedUser);
 
-      const result = await service.FindUserByEmailorName('david');
+      const result = await service.FindUserByName('david');
 
       expect(result).toBe(mockedUser);
     });
     it('should check if the user does not exist', async () => {
       prismaMock.user.findFirst.mockResolvedValue(null);
 
-      expect(service.FindUserByEmailorName('hello')).rejects.toThrowError('user_not_found');
+      expect(service.FindUserByName('hello')).rejects.toThrowError('user_not_found');
     });
   });
 
@@ -203,9 +191,9 @@ describe('UserService', () => {
     });
 
     it('should check if the users are in cache', async () => {
-      await cacheService.set('users', [mockedUser], 60);
+      await cache.set('users', [mockedUser], 60);
 
-      expect(await cacheService.get('users')).toStrictEqual([
+      expect(await cache.get('users')).toStrictEqual([
         {
           ...mockedUser,
           createdAt: mockedUser.createdAt.toISOString(),
@@ -238,9 +226,9 @@ describe('UserService', () => {
     });
 
     it('should check if the deleted user is in cache', async () => {
-      await cacheService.set('1234', mockedUser, 60);
+      await cache.set('1234', mockedUser, 60);
 
-      expect(await cacheService.get('1234')).toStrictEqual({
+      expect(await cache.get('1234')).toStrictEqual({
         ...mockedUser,
         createdAt: mockedUser.createdAt.toISOString(),
         updatedAt: mockedUser.updatedAt.toISOString(),
@@ -250,18 +238,15 @@ describe('UserService', () => {
   });
 
   describe('update user password', () => {
-    it('should update the user and return the updated user object', async () => {
+    it('should check the old Password with the database', async () => {
       const updateUserDto: UpdateUserPasswordDto = {
-        password: bcrypt.hashSync('12345', 10),
+        newPassword: bcrypt.hashSync('12345', 10),
+        oldPassword: '1234',
       };
 
-      prismaMock.user.update.mockResolvedValue(mockedUser);
+      const checkPassword = bcrypt.compare(updateUserDto.oldPassword, mockedUser.password);
 
-      const result = await service.UpdateUserPassword(mockedUser.id, {
-        password: updateUserDto.password,
-      });
-
-      expect(result).toEqual(mockedUser);
+      expect(checkPassword).toBeTruthy();
     });
 
     it('should throw an HttpException if the user is not found', async () => {
@@ -269,16 +254,19 @@ describe('UserService', () => {
       prismaMock.user.update.mockResolvedValue(null);
 
       // Call the method with a user ID and a new password.
-      const updatePromise = service.UpdateUserPassword('testUserId', { password: 'newPassword' });
+      const updatePromise = service.UpdateUserPassword('1123', {
+        newPassword: '1234',
+        oldPassword: '1234',
+      });
 
       // Assert that the method threw an HttpException with the expected message and status code.
       await expect(updatePromise).rejects.toThrowError('user_not_updated');
     });
 
     it('should check if the updated user is in cache', async () => {
-      await cacheService.set('1234', mockedUser, 60);
+      await cache.set('1234', mockedUser, 60);
 
-      expect(await cacheService.get('1234')).toStrictEqual({
+      expect(await cache.get('1234')).toStrictEqual({
         ...mockedUser,
         createdAt: mockedUser.createdAt.toISOString(),
         updatedAt: mockedUser.updatedAt.toISOString(),
