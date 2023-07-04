@@ -185,11 +185,15 @@ export class UserService {
    * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
 
-  async FindUserByName(q: string, offset?: number, limit?: number) {
+  async FindUserByName(q: string, offset = 1, limit = 10) {
     const dataCache = JSON.parse(await this.cache.get(`user:${q}:offset:${offset}:limit:${limit}`));
 
     if (dataCache) return { users: dataCache, total: dataCache.length };
     try {
+      if (offset < 1)
+        throw new HttpException('offset must be greater than 0', HttpStatus.BAD_REQUEST);
+
+      const skipCount = (offset - 1) * limit;
       const user = await this.prisma.user.findMany({
         where: {
           OR: [
@@ -200,7 +204,7 @@ export class UserService {
             },
           ],
         },
-        skip: offset,
+        skip: skipCount,
         take: limit,
         select: {
           id: true,
@@ -239,7 +243,7 @@ export class UserService {
    * @returns A promise that resolves to an object containing the users and the total count.
    * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
-  async FindAllUsers(offset?: number, limit?: number) {
+  async FindAllUsers(offset = 1, limit = 10) {
     const cacheKey = `user:${offset}:${limit}`;
     const dataCache = await this.cache.cachePagination({
       limit,
@@ -259,8 +263,11 @@ export class UserService {
     }
 
     try {
+      if (offset < 1)
+        throw new HttpException('offset must be greater than 0', HttpStatus.BAD_REQUEST);
+      const skipCount = (offset - 1) * limit;
       const users = await this.prisma.user.findMany({
-        skip: offset,
+        skip: skipCount,
         take: limit,
         include: {
           sessions: true,

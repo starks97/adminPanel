@@ -1,6 +1,12 @@
 import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
 import { CacheSystemService } from './../cache-system/cache-system.service';
-import { Injectable, NotFoundException, HttpException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  HttpException,
+  ForbiddenException,
+  HttpStatus,
+} from '@nestjs/common';
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
 
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -118,7 +124,7 @@ export class BlogService {
    * @returns A promise that resolves to an object containing the posts and the total count.
    * @throws PostNotFoundError if there is a general error.
    */
-  async findAllPosts(offset?: number, limit?: number) {
+  async findAllPosts(offset = 1, limit = 10) {
     const cacheKey = `blog:offset:${offset}:limit:${limit}`;
     const dataFromCacheShield = await this.cache.cachePagination({
       limit,
@@ -134,8 +140,12 @@ export class BlogService {
 
     if (dataWhithout) return { posts: dataWhithout, total: dataWhithout.length };
     try {
+      if (offset < 1)
+        throw new HttpException('offset must be greater than 0', HttpStatus.BAD_REQUEST);
+
+      const skipCount = (offset - 1) * limit;
       const posts = await this.prisma.post.findMany({
-        skip: offset,
+        skip: skipCount,
         take: limit,
         orderBy: {
           createdAt: 'desc',
@@ -218,6 +228,11 @@ export class BlogService {
     try {
       const where = {};
 
+      if (+offset < 1)
+        throw new HttpException('offset must be greater than 0', HttpStatus.BAD_REQUEST);
+
+      const skipCount = (+offset - 1) * +limit;
+
       if (tags && tags.length > 0) {
         where['tags'] = {
           hasEvery: tags,
@@ -234,7 +249,7 @@ export class BlogService {
         where: {
           OR: [where],
         },
-        skip: +offset || 0,
+        skip: skipCount,
         take: +limit || 10,
         include: {
           resources: true,
