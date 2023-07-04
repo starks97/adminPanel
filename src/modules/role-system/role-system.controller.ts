@@ -35,7 +35,6 @@ import { Permission } from '../auth/decorator/permissio.decorator';
 @Controller('role-system')
 @UseGuards(JwtAuthGuard)
 @UseGuards(RoleGuard)
-@ApiBearerAuth('access-token')
 export class RoleSystemController {
   constructor(private readonly roleSystemService: RoleSystemService) {}
 

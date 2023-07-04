@@ -35,11 +35,9 @@ import { Permission } from '../auth/decorator/permissio.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('User')
-//@ApiSecurity('bearer', ['UPDATE', 'DELETE', 'CREATE'])
 @Controller('user')
 @UseGuards(JwtAuthGuard)
 @UseGuards(RoleGuard)
-@ApiBearerAuth('access_token')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
