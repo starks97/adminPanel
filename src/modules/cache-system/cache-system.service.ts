@@ -75,7 +75,7 @@ export class CacheSystemService {
   private readonly redis: Redis;
 
   constructor(private readonly cache: RedisService, private readonly prisma: PrismaService) {
-    this.redis = this.cache.getClient(DEFAULT_REDIS_NAMESPACE);
+    this.redis = this.cache.getClient();
   }
 
   /**
