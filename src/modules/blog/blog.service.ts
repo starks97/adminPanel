@@ -124,7 +124,7 @@ export class BlogService {
    * @returns A promise that resolves to an object containing the posts and the total count.
    * @throws PostNotFoundError if there is a general error.
    */
-  async findAllPosts(offset = 1, limit = 10) {
+  async findAllPosts(offset: number, limit: number) {
     const cacheKey = `blog:offset:${offset}:limit:${limit}`;
     const dataFromCacheShield = await this.cache.cachePagination({
       limit,
@@ -140,16 +140,14 @@ export class BlogService {
 
     if (dataWhithout) return { posts: dataWhithout, total: dataWhithout.length };
     try {
-      if (offset < 1)
-        throw new HttpException('offset must be greater than 0', HttpStatus.BAD_REQUEST);
-
-      const skipCount = (offset - 1) * limit;
+      const skipCount = Math.floor((+offset || 0) - 1) * (+limit || 10);
       const posts = await this.prisma.post.findMany({
-        skip: skipCount,
-        take: limit,
+        skip: skipCount <= 0 ? 0 : skipCount,
+        take: limit || 10,
         orderBy: {
           createdAt: 'desc',
         },
+
         include: {
           resources: true,
         },
@@ -228,10 +226,7 @@ export class BlogService {
     try {
       const where = {};
 
-      if (+offset < 1)
-        throw new HttpException('offset must be greater than 0', HttpStatus.BAD_REQUEST);
-
-      const skipCount = (+offset - 1) * +limit;
+      const skipCount = Math.floor((+offset || 0) - 1) * (+limit || 10);
 
       if (tags && tags.length > 0) {
         where['tags'] = {
@@ -249,7 +244,7 @@ export class BlogService {
         where: {
           OR: [where],
         },
-        skip: skipCount,
+        skip: skipCount <= 0 ? 0 : skipCount,
         take: +limit || 10,
         include: {
           resources: true,

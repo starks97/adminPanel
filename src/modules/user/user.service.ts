@@ -190,9 +190,6 @@ export class UserService {
 
     if (dataCache) return { users: dataCache, total: dataCache.length };
     try {
-      if (offset < 1)
-        throw new HttpException('offset must be greater than 0', HttpStatus.BAD_REQUEST);
-
       const skipCount = (offset - 1) * limit;
       const user = await this.prisma.user.findMany({
         where: {
@@ -204,7 +201,7 @@ export class UserService {
             },
           ],
         },
-        skip: skipCount,
+        skip: skipCount <= 0 ? 0 : skipCount,
         take: limit,
         select: {
           id: true,
@@ -263,11 +260,9 @@ export class UserService {
     }
 
     try {
-      if (offset < 1)
-        throw new HttpException('offset must be greater than 0', HttpStatus.BAD_REQUEST);
       const skipCount = (offset - 1) * limit;
       const users = await this.prisma.user.findMany({
-        skip: skipCount,
+        skip: skipCount <= 0 ? 0 : skipCount,
         take: limit,
         include: {
           sessions: true,
