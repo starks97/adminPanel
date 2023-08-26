@@ -10,7 +10,7 @@ import { PrismaModule } from '../../../prisma/prisma.module';
       readyLog: true,
       config: {
         path: process.env.REDIS_URL,
-        port: 13260,
+        port: 19239,
         password: process.env.REDIS_PASSWORD,
       },
     }),

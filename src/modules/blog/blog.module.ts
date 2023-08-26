@@ -12,6 +12,7 @@ import { ConfigModule } from '@nestjs/config';
 import { CloudinarySystemModule } from '../cloudinary/cloudinary-system.module';
 import { ResourcesModule } from './resources/resources.module';
 import { CacheShieldMiddleware } from 'src/middlewares/cacheShield.midddleware';
+import { CommentModule } from './comments/comment.module';
 
 @Module({
   controllers: [BlogController],
@@ -23,6 +24,7 @@ import { CacheShieldMiddleware } from 'src/middlewares/cacheShield.midddleware';
     CloudinarySystemModule,
     ConfigModule,
     ResourcesModule,
+    CommentModule,
   ],
 })
 export class BlogModule implements NestModule {
