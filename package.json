@@ -5,6 +5,7 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "type": "module",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -43,6 +44,7 @@
     "ioredis": "^5.3.2",
     "ioredis-mock": "^8.7.0",
     "multer": "^1.4.5-lts.1",
+    "node-fetch": "2",
     "nodemailer": "^6.9.3",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1",
