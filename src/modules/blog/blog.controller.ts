@@ -125,7 +125,7 @@ export class BlogController {
   @ApiOperation({ summary: 'Find Posts by ID' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'Post found successfully' })
-  async findPost(@Param('id') id: string, @Res() res: Response) {
+  async findPost(@Param('id') id: string, @Res() res: Response, @Req() req: Request) {
     const response = await this.blogService.findPostById(id);
     return res.status(200).json({ message: 'Post found successfully', response });
   }

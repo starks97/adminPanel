@@ -85,8 +85,9 @@ model Resource {
 model Comment {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   content   String
+  name      String
+  email     String
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
 
   //RELATIONS
   post   Post   @relation(fields: [postId], references: [id])
