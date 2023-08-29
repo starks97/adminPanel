@@ -170,10 +170,13 @@ export class CacheSystemService {
       if (!data) return null;
 
       const dataArray = JSON.parse(data);
-      const startIndex = (offset - 1) * limit;
+      console.log(dataArray, 'dataArray ');
+      const startIndex = Math.max((offset - 1) * limit, 0);
       const endIndex = startIndex + limit;
 
       const newData = dataArray.slice(startIndex, endIndex);
+
+      console.log(newData, 'newData ');
 
       this.set(`${newKey}:${offset}:${limit}`, JSON.stringify(newData), 60 * 2);
 
