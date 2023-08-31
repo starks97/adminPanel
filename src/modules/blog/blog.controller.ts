@@ -2,12 +2,14 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { SearchPostDto } from './dto/search-post.dto';
 import { JwtAuthGuard } from './../auth/guards/jwt-auth.guard';
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
+  FileTypeValidator,
   Get,
+  MaxFileSizeValidator,
   Param,
+  ParseFilePipe,
   Patch,
   Post,
   Query,
@@ -92,7 +94,18 @@ export class BlogController {
     @Body() createPostDto: CreatePostDto,
     @Req() req: Request,
     @Res() res: Response,
-    @UploadedFiles() files: Array<Express.Multer.File>,
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+          new MaxFileSizeValidator({
+            maxSize: 1024 * 1024 * 10,
+            message: 'Max file size allowed is 10MB',
+          }),
+        ],
+      }),
+    )
+    files: Array<Express.Multer.File>,
   ) {
     const user = req.user['id'];
 
@@ -143,7 +156,18 @@ export class BlogController {
   async update(
     @Param('id') id: string,
     @Body() updateBlogDto: UpdatePostDto,
-    @UploadedFiles() files: Array<Express.Multer.File>,
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+          new MaxFileSizeValidator({
+            maxSize: 1024 * 1024 * 10,
+            message: 'Max file size allowed is 10MB',
+          }),
+        ],
+      }),
+    )
+    files: Array<Express.Multer.File>,
     @Res() res: Response,
   ) {
     const response = await this.blogService.updatePost(id, updateBlogDto, files);

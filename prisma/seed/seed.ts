@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 
 import * as bcrypt from 'bcryptjs';
+import { SlugGenerator } from 'src/modules/utils';
 
 const prisma = new PrismaClient();
 
@@ -107,6 +108,7 @@ async function main() {
   const post1 = await prisma.post.create({
     data: {
       title: 'Post 1',
+      slug: SlugGenerator.slugify('Post 1'),
       content: 'Content 1',
       published: true,
       description: 'Description 1',
@@ -124,6 +126,7 @@ async function main() {
   const post2 = await prisma.post.create({
     data: {
       title: 'Post 2',
+      slug: SlugGenerator.slugify('Post 2'),
       content: 'Content 2',
       published: true,
       description: 'Description 2',

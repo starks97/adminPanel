@@ -2,9 +2,12 @@ import {
   Body,
   Controller,
   Delete,
+  FileTypeValidator,
   ForbiddenException,
   Get,
+  MaxFileSizeValidator,
   Param,
+  ParseFilePipe,
   Patch,
   Post,
   Query,
@@ -146,7 +149,18 @@ export class UserController {
   @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
   @ApiConsumes('multipart/form-data')
   async userProfile(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+          new MaxFileSizeValidator({
+            maxSize: 1024 * 1024 * 10,
+            message: 'Max file size allowed is 10MB',
+          }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
     @Body() dataProfile: ProfileUserDto,
     @Res() res: Response,
     @Param('id') id: string,

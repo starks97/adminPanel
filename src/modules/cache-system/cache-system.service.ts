@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { RedisService, DEFAULT_REDIS_NAMESPACE, InjectRedis } from '@liaoliaots/nestjs-redis';
+import { RedisService } from '@liaoliaots/nestjs-redis';
 
 import { PrismaService } from '../../../prisma/prisma.service';
 import Redis from 'ioredis';
@@ -170,13 +170,11 @@ export class CacheSystemService {
       if (!data) return null;
 
       const dataArray = JSON.parse(data);
-      console.log(dataArray, 'dataArray ');
+
       const startIndex = Math.max((offset - 1) * limit, 0);
       const endIndex = startIndex + limit;
 
       const newData = dataArray.slice(startIndex, endIndex);
-
-      console.log(newData, 'newData ');
 
       this.set(`${newKey}:${offset}:${limit}`, JSON.stringify(newData), 60 * 2);
 

@@ -1,16 +1,10 @@
 import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
 import { CacheSystemService } from './../cache-system/cache-system.service';
-import {
-  Injectable,
-  NotFoundException,
-  HttpException,
-  ForbiddenException,
-  HttpStatus,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CreatePostDto, SearchPostDto, UpdatePostDto } from './dto';
 
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CustomErrorException, errorCases, PostNotFoundError } from '../utils';
+import { CustomErrorException, errorCases, PostNotFoundError, SlugGenerator } from '../utils';
 import { Post, Prisma } from '@prisma/client';
 
 import { ResourcesService } from './resources/resources.service';
@@ -76,6 +70,7 @@ export class BlogService {
       const post = await this.prisma.post.create({
         data: {
           title,
+          slug: SlugGenerator.slugify(title),
           content,
           description,
           tags,
@@ -85,6 +80,7 @@ export class BlogService {
               data: uploadImages,
             },
           },
+
           createdAt: new Date(),
           user: {
             connect: {
@@ -205,6 +201,7 @@ export class BlogService {
       throw e;
     }
   }
+
   /**
    * Retrieve blog posts based on a search query.
    *
@@ -290,7 +287,7 @@ export class BlogService {
   async updatePost(id: string, updatePostDto: UpdatePostDto, files?: Array<Express.Multer.File>) {
     const cloud = files && files.length > 0 ? await this.cloudinary.upload(files) : undefined;
 
-    const { resourcesIds, ...rest } = updatePostDto;
+    const { resourcesIds, title, ...rest } = updatePostDto;
 
     try {
       const data = await this.prisma.$transaction(async ctx => {
@@ -315,6 +312,7 @@ export class BlogService {
           data: {
             ...rest,
             updatedAt: new Date(),
+            slug: SlugGenerator.slugify(title),
             resources: cloud
               ? {
                   createMany: {
