@@ -35,6 +35,7 @@ export class BlogService {
     this.cache._configModel('post', {
       include: {
         resources: true,
+        user: true,
       },
     });
   }
@@ -93,6 +94,7 @@ export class BlogService {
         },
         include: {
           resources: true,
+          user: true,
         },
       });
 
@@ -150,6 +152,7 @@ export class BlogService {
 
         include: {
           resources: true,
+          user: true,
         },
       });
 
@@ -182,6 +185,7 @@ export class BlogService {
         where: { id },
         include: {
           resources: true,
+          user: true,
         },
       });
 
@@ -248,6 +252,7 @@ export class BlogService {
         take: +limit || 10,
         include: {
           resources: true,
+          user: true,
         },
       });
 
@@ -320,6 +325,7 @@ export class BlogService {
           },
           include: {
             resources: true,
+            user: true,
           },
         });
 
