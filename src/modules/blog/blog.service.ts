@@ -201,6 +201,45 @@ export class BlogService {
       throw e;
     }
   }
+  /**
+   * Retrieve a blog post by its slug.
+   *
+   * This method searches for a blog post in the database using its unique slug. If the post is
+   * found, it is returned. If not, an error is thrown.
+   *
+   * @param {string} slug - The slug of the post to retrieve.
+   * @returns {Promise<Post>} A promise that resolves to the retrieved post.
+   * @throws {PostNotFoundError} If the specified post is not found.
+   * @throws {CustomErrorException} If there is a general error during retrieval.
+   */
+  async findPostBySlug(slug: SearchPostDto['slug']) {
+    const dataCache = JSON.parse(await this.cache.get('blog:' + slug));
+    if (dataCache) return dataCache;
+    try {
+      const post = await this.prisma.post.findFirst({
+        where: { slug },
+        include: {
+          resources: true,
+          user: true,
+        },
+      });
+
+      if (!post) throw new PostNotFoundError(slug);
+
+      this.cache.set('blog:' + slug, JSON.stringify(post), 60 * 2);
+
+      return post;
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomErrorException({
+          errorCase: errorCases.POST_NOT_FOUND,
+          errorType: 'Post',
+          value: slug,
+        });
+      }
+      throw e;
+    }
+  }
 
   /**
    * Retrieve blog posts based on a search query.

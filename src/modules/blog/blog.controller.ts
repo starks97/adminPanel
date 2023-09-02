@@ -118,6 +118,7 @@ export class BlogController {
   @ApiQuery({ name: 'offset', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
   @ApiQuery({ name: 'category', type: String, required: false })
+  @ApiQuery({ name: 'slug', type: String, required: false })
   @ApiQuery({ name: 'tags', isArray: true, type: String, required: false })
   @ApiResponse({ status: 200, description: 'Post found successfully' })
   async findAllPosts(@Query() query: SearchPostDto, @Res() res: Response) {
@@ -127,6 +128,11 @@ export class BlogController {
     if (query.category || query.tags) {
       const posts = await this.blogService.findPostByQuery(query);
       return res.status(200).json({ message: 'Post found successfully', data: posts });
+    }
+
+    if (query.slug) {
+      const post = await this.blogService.findPostBySlug(query.slug);
+      return res.status(200).json({ message: 'Post found successfully', data: post });
     }
 
     const posts = await this.blogService.findAllPosts(postOffset, postLimit);
