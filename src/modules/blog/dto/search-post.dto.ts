@@ -12,7 +12,6 @@ const searchPostSchema = createPostSchema.pick({ category: true }).extend({
   offset: numericSring,
   limit: numericSring,
   tags: z.array(z.string()).optional(),
-  slug: z.string().optional(),
 });
 
 export class SearchPostDto extends createZodDto(searchPostSchema) {}

@@ -57,7 +57,7 @@ model Post {
   title       String    @unique()
   slug        String
   description String
-  content     String
+  content     String    @db.String
   tags        String[]
   category    Category  @default(TECHNOLOGY)
   published   Boolean   @default(false)

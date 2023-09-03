@@ -27,8 +27,6 @@ import { Request, Response } from 'express';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Permission } from '../auth/decorator/permissio.decorator';
 import {
-  ApiBasicAuth,
-  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -118,7 +116,6 @@ export class BlogController {
   @ApiQuery({ name: 'offset', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
   @ApiQuery({ name: 'category', type: String, required: false })
-  @ApiQuery({ name: 'slug', type: String, required: false })
   @ApiQuery({ name: 'tags', isArray: true, type: String, required: false })
   @ApiResponse({ status: 200, description: 'Post found successfully' })
   async findAllPosts(@Query() query: SearchPostDto, @Res() res: Response) {
@@ -130,14 +127,18 @@ export class BlogController {
       return res.status(200).json({ message: 'Post found successfully', data: posts });
     }
 
-    if (query.slug) {
-      const post = await this.blogService.findPostBySlug(query.slug);
-      return res.status(200).json({ message: 'Post found successfully', data: post });
-    }
-
     const posts = await this.blogService.findAllPosts(postOffset, postLimit);
 
     return res.status(200).json({ message: 'Post found successfully', data: posts });
+  }
+
+  @Get('post/:slug')
+  @ApiOperation({ summary: 'Find Posts by Slug' })
+  @ApiParam({ name: 'slug', type: String })
+  @ApiResponse({ status: 200, description: 'Post found successfully' })
+  async findPostBySlug(@Param('slug') slug: string, @Res() res: Response) {
+    const response = await this.blogService.findPostBySlug(slug);
+    return res.status(200).json({ message: 'Post found successfully', response });
   }
 
   @Get('post/:id')

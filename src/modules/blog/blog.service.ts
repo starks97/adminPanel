@@ -50,7 +50,7 @@ export class BlogService {
     files: Array<Express.Multer.File>,
   ): Promise<Post | CustomErrorException> {
     try {
-      const { title, content, description, category, tags } = createPostDto;
+      const { title, description, category, tags, content } = createPostDto;
 
       const uploadImages = await this.cloudinary.upload(files);
 
@@ -212,7 +212,7 @@ export class BlogService {
    * @throws {PostNotFoundError} If the specified post is not found.
    * @throws {CustomErrorException} If there is a general error during retrieval.
    */
-  async findPostBySlug(slug: SearchPostDto['slug']) {
+  async findPostBySlug(slug: string) {
     const dataCache = JSON.parse(await this.cache.get('blog:' + slug));
     if (dataCache) return dataCache;
     try {
@@ -351,7 +351,7 @@ export class BlogService {
           data: {
             ...rest,
             updatedAt: new Date(),
-            slug: SlugGenerator.slugify(title),
+            slug: title ? SlugGenerator.slugify(title) : undefined,
             resources: cloud
               ? {
                   createMany: {
