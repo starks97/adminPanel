@@ -8,6 +8,7 @@ import { CustomErrorException, errorCases, PostNotFoundError, SlugGenerator } fr
 import { Post, Prisma } from '@prisma/client';
 
 import { ResourcesService } from './resources/resources.service';
+import { cacheBlogIDKey, cacheBlogSlugKey } from 'src/consts';
 /** BlogService is an injectable class that provides methods for managing blog posts. */
 @Injectable()
 export class BlogService {
@@ -174,7 +175,7 @@ export class BlogService {
    * @throws CustomErrorException if there is a general error.
    */
   async findPostById(id: string) {
-    const dataCache = JSON.parse(await this.cache.get('blog:' + id));
+    const dataCache = JSON.parse(await this.cache.get(cacheBlogIDKey));
     if (dataCache) return dataCache;
     try {
       const post = await this.prisma.post.findUnique({
@@ -187,7 +188,7 @@ export class BlogService {
 
       if (!post) throw new PostNotFoundError(id);
 
-      this.cache.set('blog:' + id, JSON.stringify(post), 60 * 2);
+      this.cache.set(cacheBlogIDKey, JSON.stringify(post), 60 * 2);
 
       return post;
     } catch (e) {
@@ -213,7 +214,7 @@ export class BlogService {
    * @throws {CustomErrorException} If there is a general error during retrieval.
    */
   async findPostBySlug(slug: string) {
-    const dataCache = JSON.parse(await this.cache.get('blog:' + slug));
+    const dataCache = JSON.parse(await this.cache.get(cacheBlogSlugKey));
     if (dataCache) return dataCache;
     try {
       const post = await this.prisma.post.findFirst({
@@ -226,7 +227,7 @@ export class BlogService {
 
       if (!post) throw new PostNotFoundError(slug);
 
-      this.cache.set('blog:' + slug, JSON.stringify(post), 60 * 2);
+      this.cache.set(cacheBlogSlugKey, JSON.stringify(post), 60 * 2);
 
       return post;
     } catch (e) {

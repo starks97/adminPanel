@@ -24,6 +24,9 @@ import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { CreateUserDto, LoginUserDto } from '../user/dto';
+import { AUTH_TOKEN, REFRESH_TOKEN, expirationTime } from 'src/consts';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CustomErrorException } from '../utils';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -53,30 +56,34 @@ export class AuthController {
   async findByLogin(@Body() { email, password }: LoginUserDto, @Res() res: Response) {
     const response = await this.authService.SignIn({ email, password });
 
-    if (!response) throw new ForbiddenException('user_not_logged');
-
-    res.setHeader('auth_token', response.data?.access_token);
-
-    res.cookie('refresh_token', response.data?.refresh_token, {
+    res.setHeader(AUTH_TOKEN, response.data?.access_token);
+    res.cookie(REFRESH_TOKEN, response.data?.refresh_token, {
+      maxAge: expirationTime,
       httpOnly: true,
-      sameSite: 'strict',
     });
 
     return res.status(200).json(response.data.rest);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('/logout')
   @ApiOperation({ summary: 'Logout' })
   @ApiResponse({ status: 200, description: 'Successful logout' })
   async logout(@Res() res: Response, @Req() req: Request) {
-    const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
+    try {
+      this.authService.deleteUserSession(req.user['email']);
+      res.setHeader('auth', null);
+      res.clearCookie(REFRESH_TOKEN);
 
-    await this.authService.deleteUserSession(decoded[0]);
-
-    res.removeHeader('auth_token');
-    res.clearCookie('refresh_token');
-
-    return res.status(200).json({ message: 'user_logged_out', success: true });
+      return res.status(200).json({ message: 'user_logged_out', success: true });
+    } catch (error) {
+      if (error instanceof CustomErrorException) {
+        return res.status(error.getStatus()).json({ message: error.message });
+      } else {
+        console.error(error);
+        return res.status(500).json({ message: 'An error occurred' });
+      }
+    }
   }
 
   @UseGuards(RefreshTokenGuard)
@@ -86,12 +93,23 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Token refreshed', type: String })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async refreshToken(@Req() req: Request, @Res() res: Response) {
-    const decoded = Object.values(this.authService._decodeToken(req.cookies.refresh_token));
+    try {
+      const response = await this.authService.refreshToken(req.cookies.refresh_token);
 
-    const response = await this.authService.refreshToken(decoded[0], req.cookies.refresh_token);
+      res.setHeader(AUTH_TOKEN, response.authToken);
+      res.cookie(REFRESH_TOKEN, response.refreshToken, {
+        maxAge: expirationTime,
+        httpOnly: true,
+      });
 
-    res.setHeader('auth_token', response);
-
-    return res.status(200).json({ message: 'token_refreshed', success: true, data: response });
+      return res.status(200).json({ message: 'token_refreshed', success: true, data: response });
+    } catch (error) {
+      if (error instanceof CustomErrorException) {
+        return res.status(error.getStatus()).json({ message: error.message });
+      } else {
+        console.error(error);
+        return res.status(500).json({ message: 'An error occurred' });
+      }
+    }
   }
 }

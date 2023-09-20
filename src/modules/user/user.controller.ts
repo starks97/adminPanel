@@ -3,22 +3,20 @@ import {
   Controller,
   Delete,
   FileTypeValidator,
-  ForbiddenException,
   Get,
   MaxFileSizeValidator,
+  Optional,
   Param,
   ParseFilePipe,
   Patch,
   Post,
   Query,
-  Req,
   Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -31,11 +29,13 @@ import {
 import { Request, Response } from 'express';
 
 import { RoleGuard } from './../auth/guards/role.guard';
-import { ProfileUserDto, UpdateUserPasswordDto } from './dto';
+import { ProfileUserDto, SearchUserDto, UpdateUserPasswordDto } from './dto';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Permission } from '../auth/decorator/permissio.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CustomErrorException } from '../utils';
+import { Prisma } from '@prisma/client';
 
 @ApiTags('User')
 @Controller('user')
@@ -45,30 +45,24 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Permission(['UPDATE'])
-  @Get()
+  @Get('/')
   @ApiOperation({ summary: 'Get all users by queries', description: 'Get all users by queries' })
-  @ApiQuery({ name: 'offset', type: Number, required: false })
-  @ApiQuery({ name: 'limit', type: Number, required: false })
-  @ApiQuery({ name: 'q', type: String, required: false })
+  @ApiQuery({ name: 'query', type: String, required: false })
   @ApiResponse({ status: 200, description: 'Users found successfully' })
   @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
-  async findUserByQueries(
-    @Query('offset') offset: string,
-    @Query('limit') limit: string,
-    @Query('q') q: string,
-    @Res() res: Response,
-  ) {
-    const userOffset = +offset || 0;
-    const userLimit = +limit || 10;
+  async findUserByQueries(@Query() query: SearchUserDto, @Res() res: Response) {
+    const userOffset = +query.offset || 0;
+    const userLimit = +query.limit || 10;
 
-    if (q) {
-      const response = await this.userService.FindUserByName(q, userOffset, userLimit);
+    if (query.name) {
+      const response = await this.userService.FindUserByName(query);
       return res.status(200).json({ message: 'Users found successfully', data: response });
     }
 
     const response = await this.userService.FindAllUsers(userOffset, userLimit);
     return res.status(200).json({ message: 'Users found successfully', data: response });
   }
+
   @Permission(['UPDATE'])
   @Post('/:id')
   @ApiOperation({ summary: 'Asign role to user', description: 'Asign role to user' })
@@ -82,9 +76,18 @@ export class UserController {
     @Body('roleName') roleName: string,
     @Res() res: Response,
   ) {
-    const response = await this.userService.AssignRoleToUser(id, roleName);
+    try {
+      const response = await this.userService.AssignRoleToUser(id, roleName);
 
-    return res.status(200).json({ message: 'role_assigned', data: response });
+      return res.status(200).json({ message: 'role_assigned', data: response });
+    } catch (error) {
+      if (error instanceof CustomErrorException) {
+        return res.status(error.getStatus()).json({ message: error.message });
+      } else {
+        console.error(error);
+        return res.status(500).json({ message: 'An error occurred' });
+      }
+    }
   }
   @Permission(['UPDATE'])
   @Get('/:id')
@@ -97,21 +100,25 @@ export class UserController {
   }
   @Permission(['UPDATE'])
   @Patch('/:id')
-  @ApiOperation({ summary: 'Update Password of User', description: 'Update Password of User' })
-  @ApiParam({ name: 'id', type: String })
-  @ApiBody({ type: UpdateUserPasswordDto, description: 'User Password Data' })
-  @ApiResponse({ status: 200, description: 'User updated successfully' })
-  @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
-  @ApiConsumes('multipart/form-data', 'application/json')
   async updatePasswordUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserPasswordDto,
     @Res() res: Response,
   ) {
-    this.userService.UpdateUserPassword(id, updateUserDto);
-    res.removeHeader('auth_token');
-    res.clearCookie('refresh_token');
-    return res.status(200).json({ message: 'user_updated' });
+    try {
+      const response = await this.userService.UpdateUserPassword(id, updateUserDto);
+
+      //res.removeHeader('auth_token');
+      //res.clearCookie('refresh_token');
+      return res.status(200).json({ message: 'user_updated', response });
+    } catch (error) {
+      if (error instanceof CustomErrorException) {
+        return res.status(error.getStatus()).json({ message: error.message });
+      } else {
+        console.error(error);
+        return res.status(500).json({ message: 'An error occurred' });
+      }
+    }
   }
   @Permission(['DELETE'])
   @Delete('/:id')
@@ -120,11 +127,20 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
   @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
   async removeUser(@Param('id') id: string, @Res() res: Response) {
-    this.userService.DeleteUser(id);
-    res.removeHeader('auth_token');
-    res.clearCookie('refresh_token');
+    try {
+      const response = await this.userService.DeleteUser(id);
+      res.removeHeader('auth_token');
+      res.clearCookie('refresh_token');
 
-    return res.status(200).json({ message: 'user_deleted' });
+      return res.status(200).json({ message: 'user_deleted', response });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        return res.status(+error.code).json({ message: error.message });
+      } else {
+        console.error(error);
+        return res.status(500).json({ message: 'An error occurred' });
+      }
+    }
   }
   @Permission(['CREATE'])
   @UseInterceptors(FileInterceptor('file'))
@@ -158,10 +174,12 @@ export class UserController {
             message: 'Max file size allowed is 10MB',
           }),
         ],
+        fileIsRequired: false,
       }),
     )
-    file: Express.Multer.File,
-    @Body() dataProfile: ProfileUserDto,
+    file: Express.Multer.File | undefined,
+    @Body()
+    dataProfile: ProfileUserDto,
     @Res() res: Response,
     @Param('id') id: string,
   ) {

@@ -1,7 +1,7 @@
-import { CustomErrorException } from './../../utils/handlerError';
+import { AuthErrorHandler, CustomErrorException, errorCases } from './../../utils/handlerError';
 import { AuthService } from './../auth.service';
 import { PrismaService } from './../../../../prisma/prisma.service';
-import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Permissions } from '@prisma/client';
 /**
@@ -48,13 +48,15 @@ export class RoleGuard implements CanActivate {
       const { headers } = context.switchToHttp().getRequest();
 
       if (!headers.authorization)
-        throw new ForbiddenException('Token not found, please login to continue!');
+        throw new AuthErrorHandler('Token', errorCases.TOKEN_NOT_FOUND, 405);
 
       const token = headers.authorization.replace('Bearer ', '');
 
       if (!token) return false;
 
       const decodeToken = this.auth._decodeToken(token);
+
+      if (!decodeToken) throw new AuthErrorHandler('Token', errorCases.TOKEN_NOT_FOUND, 405);
 
       const user = await this.prisma.user.findUnique({
         where: {
@@ -70,6 +72,7 @@ export class RoleGuard implements CanActivate {
           errorType: 'User',
           errorCase: 'user_not_found',
           value: user.id,
+          status: 404,
         });
 
       const checkPermission = requestedPermissions.every(permission => {
@@ -81,13 +84,16 @@ export class RoleGuard implements CanActivate {
           errorType: 'User',
           errorCase: 'user_without_enough_permission',
           value: user.id,
+          status: 403,
         });
 
       return true;
-    } catch (e) {
-      console.log(e.message);
-      if (e instanceof CustomErrorException) throw e;
-      throw new ForbiddenException(e.message);
+    } catch (error) {
+      console.log(error);
+      if (error instanceof CustomErrorException) {
+        throw error;
+      }
+      throw error.message;
     }
   }
 }

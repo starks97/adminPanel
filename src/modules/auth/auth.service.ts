@@ -6,6 +6,10 @@ import { CreateUserDto, LoginUserDto } from './../user/dto';
 import { UserService } from './../user/user.service';
 import { JWTPayload, LoginStatus, RegistrationStatus } from './interfaces';
 import { SessionManagerService } from './session/session.service';
+import { CacheSystemService } from '../cache-system/cache-system.service';
+import { AUTH_TOKEN, REFRESH_TOKEN } from 'src/consts';
+import { PassHasherService } from '../user/pass-hasher/pass-hasher.service';
+import { AuthErrorHandler, CustomErrorException, errorCases } from '../utils';
 
 /**
  * # AuthService
@@ -53,7 +57,15 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly session: SessionManagerService,
-  ) {}
+    private readonly cache: CacheSystemService,
+    private readonly hasher: PassHasherService,
+  ) {
+    this.cache._configModel('user', {
+      include: {
+        role: true,
+      },
+    });
+  }
 
   /**
    * Sign up a new user with the provided user data.
@@ -90,11 +102,6 @@ export class AuthService {
    */
   async SignIn({ email, password }: LoginUserDto): Promise<LoginStatus> {
     const user = await this.userService.FindByLogin({ email, password });
-
-    const tokens = await this._createTokens({ id: user.id, email: user.email });
-
-    await this.session.createSessionAndOverride(user.id, tokens.refreshToken);
-
     if (!user) {
       throw new ForbiddenException({
         message: 'user_not_found',
@@ -102,11 +109,19 @@ export class AuthService {
       });
     }
 
+    const tokens = await this._createTokens({ id: user.id, email: user.email });
+
+    this.cache.setTokentoRedis(`dataUser:${user.email}`, tokens.refreshToken);
+
     const { id, password: pass, ...rest } = user;
 
     return {
       message: 'user_logged',
-      data: { access_token: tokens.authToken, refresh_token: tokens.refreshToken, rest },
+      data: {
+        access_token: tokens.authToken,
+        refresh_token: tokens.refreshToken,
+        rest,
+      },
       success: true,
     };
   }
@@ -118,17 +133,44 @@ export class AuthService {
    * @param token - The current authentication token.
    * @returns The new authentication token.
    */
-  async refreshToken(userId: string, token: string) {
-    const userSession = await this.session.findSessionByUser(userId, token);
+  async refreshToken(token: string) {
+    try {
+      const decodedToken = this._decodeToken(token);
 
-    const tokens = await this._createTokens({
-      id: userSession.id,
-      email: userSession.email,
-    });
+      const { email, id } = decodedToken;
 
-    await this.session.updateSession(userSession.id, tokens.refreshToken);
+      const refreshTokenKey = `dataUser:${email}`;
 
-    return tokens.authToken;
+      const tokens = await this._createTokens({
+        id,
+        email,
+      });
+
+      const storedTokens = await this.cache.getTokenFromRedis(refreshTokenKey);
+
+      if (!Array.isArray(storedTokens))
+        throw new CustomErrorException({
+          errorCase: errorCases.TOKEN_NOT_SET,
+          value: token,
+          errorType: 'Token',
+          status: 400,
+        });
+
+      if (!storedTokens.includes(token))
+        throw new CustomErrorException({
+          errorCase: errorCases.TOKEN_NOT_FOUND,
+          value: token,
+          errorType: 'Token',
+          status: 404,
+        });
+
+      this.cache.setTokentoRedis(refreshTokenKey, tokens.refreshToken);
+
+      return tokens;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   }
   /**
    * Deletes a user session based on the user ID.
@@ -136,9 +178,11 @@ export class AuthService {
    * @param userId - The ID of the user whose session will be deleted.
    * @returns The deleted user session.
    */
-  async deleteUserSession(userId: string) {
-    const userSession = await this.session.deleteSession(userId);
-    return userSession;
+
+  async deleteUserSession(email: string) {
+    const tokenKey = `dataUser:${email}`;
+
+    return await this.cache.cacheInValidation(tokenKey);
   }
   /**
    * Decodes a JWT token and retrieves the payload data.
@@ -147,7 +191,14 @@ export class AuthService {
    * @returns The decoded payload as an object of type `JWTPayload`.
    */
   _decodeToken(token: string) {
-    return this.jwtService.decode(token) as JWTPayload;
+    try {
+      if (!token) throw new AuthErrorHandler('Token', errorCases.TOKEN_NOT_FOUND, 403);
+
+      return this.jwtService.decode(token) as JWTPayload;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
   /**
@@ -157,17 +208,28 @@ export class AuthService {
    * @returns An object containing the authentication and refresh tokens.
    */
   private async _createTokens(payload: JWTPayload) {
-    const [authToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('SECRET_JWT_KEY'),
-        expiresIn: '1h',
-      }),
-      this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('REFRESH_JWT_KEY'),
-        expiresIn: '7d',
-      }),
-    ]);
+    try {
+      const [authToken, refreshToken] = await Promise.all([
+        this.jwtService.signAsync(payload, {
+          secret: this.configService.get<string>('SECRET_JWT_KEY'),
+          expiresIn: '1h',
+        }),
+        this.jwtService.signAsync(payload, {
+          secret: this.configService.get<string>('REFRESH_JWT_KEY'),
+          expiresIn: '7d',
+        }),
+      ]);
 
-    return { authToken, refreshToken };
+      return { authToken, refreshToken };
+    } catch (error) {
+      console.error(error);
+
+      throw new CustomErrorException({
+        errorType: 'Token',
+        errorCase: 'token_creation_failed',
+        value: payload.id,
+        status: 405,
+      });
+    }
   }
 }

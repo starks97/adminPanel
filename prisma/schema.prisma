@@ -36,8 +36,8 @@ model Session {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   token     String   @unique
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  User      User?    @relation(fields: [userId], references: [id])
+  updatedAt DateTime @default(now())
+  User      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String?  @db.ObjectId
 }
 

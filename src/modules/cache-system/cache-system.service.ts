@@ -4,20 +4,7 @@ import { RedisService } from '@liaoliaots/nestjs-redis';
 
 import { PrismaService } from '../../../prisma/prisma.service';
 import Redis from 'ioredis';
-
-type T_KEYS<T> = keyof T;
-
-export interface CacheStateProps<T> {
-  model: Uncapitalize<Prisma.ModelName>;
-  storeKey: string;
-  exclude?: T_KEYS<T>[];
-}
-
-export interface CachePagProps<T> extends Omit<CacheStateProps<T>, 'model' | 'exclude'> {
-  newKey: string;
-  offset: number;
-  limit: number;
-}
+import { CacheMultiSetProps, CachePagProps, CacheStateProps } from './interfaces';
 
 /**
  * # Cache System Service
@@ -107,6 +94,32 @@ export class CacheSystemService {
     if (!ttl) throw new Error('TTL is required');
 
     return this.redis.set(key, value, 'EX', ttl);
+  }
+
+  async setTokentoRedis(key: string, element: string) {
+    if (!key) throw new Error('Key is required');
+    if (!element) throw new Error('Element is required');
+    try {
+      const pipeline = this.redis.multi();
+
+      if ((await this.redis.llen(key)) > 2) {
+        pipeline.lpop(key);
+      }
+
+      pipeline.rpush(key, element);
+
+      await pipeline.exec();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async getTokenFromRedis(key: string) {
+    if (!key) {
+      throw new Error('Key not found, please provided the correct key');
+    }
+
+    return this.redis.lrange(key, 0, 2);
   }
 
   /**

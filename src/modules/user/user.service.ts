@@ -2,7 +2,7 @@ import { CustomErrorException, errorCases, UserErrorHandler } from './../utils/h
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 
-import { CreateUserDto, LoginUserDto, ProfileUserDto } from './dto';
+import { CreateUserDto, LoginUserDto, ProfileUserDto, SearchUserDto } from './dto';
 import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
 import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -19,7 +19,6 @@ export class UserService {
   ) {
     this.cache._configModel('user', {
       include: {
-        sessions: true,
         role: true,
       },
     });
@@ -67,7 +66,6 @@ export class UserService {
           },
         },
         include: {
-          sessions: true,
           role: true,
         },
       });
@@ -105,10 +103,6 @@ export class UserService {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email },
-        include: {
-          sessions: true,
-          role: true,
-        },
       });
 
       if (!user) {
@@ -153,7 +147,6 @@ export class UserService {
       const user = await this.prisma.user.findUnique({
         where: { id },
         include: {
-          sessions: true,
           role: true,
         },
       });
@@ -185,31 +178,32 @@ export class UserService {
    * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
 
-  async FindUserByName(q: string, offset = 1, limit = 10) {
-    const dataCache = JSON.parse(await this.cache.get(`user:${q}:offset:${offset}:limit:${limit}`));
+  async FindUserByName(query: SearchUserDto) {
+    const { name, limit, offset } = query;
+    const cacheKey = `user:${name}:offset:${+offset || 0}:limit:${+limit || 10}`;
+    const dataCache = JSON.parse(await this.cache.get(cacheKey));
 
     if (dataCache) return { users: dataCache, total: dataCache.length };
     try {
-      const skipCount = (offset - 1) * limit;
+      const skipCount = Math.floor((+offset || 0) - 1) * (+limit || 10);
       const user = await this.prisma.user.findMany({
         where: {
           OR: [
             {
               name: {
-                startsWith: q,
+                startsWith: name,
               },
             },
           ],
         },
         skip: skipCount <= 0 ? 0 : skipCount,
-        take: limit,
+        take: +limit || 10,
         select: {
           id: true,
           email: true,
           name: true,
           role: true,
           createdAt: true,
-          sessions: true,
         },
       });
 
@@ -219,7 +213,7 @@ export class UserService {
 
       const data = { users: user, total: user.length };
 
-      this.cache.set(`user:${q}:offset:${offset}:limit:${limit}`, JSON.stringify(user), 60);
+      this.cache.set(cacheKey, JSON.stringify(user), 60);
 
       return data;
     } catch (e) {
@@ -240,13 +234,13 @@ export class UserService {
    * @returns A promise that resolves to an object containing the users and the total count.
    * @throws UserErrorHandler if an error occurs during the retrieval process.
    */
-  async FindAllUsers(offset = 1, limit = 10) {
+  async FindAllUsers(offset: number, limit: number) {
     const cacheKey = `user:${offset}:${limit}`;
     const dataCache = await this.cache.cachePagination({
       limit,
       offset,
-      storeKey: 'users',
       newKey: 'user',
+      storeKey: 'users',
     });
 
     if (dataCache) {
@@ -260,12 +254,11 @@ export class UserService {
     }
 
     try {
-      const skipCount = (offset - 1) * limit;
+      const skipCount = Math.floor((+offset || 0) - 1) * (+limit || 10);
       const users = await this.prisma.user.findMany({
         skip: skipCount <= 0 ? 0 : skipCount,
         take: limit,
         include: {
-          sessions: true,
           role: true,
         },
       });
@@ -276,7 +269,7 @@ export class UserService {
 
       const data = { users, total: users.length };
 
-      this.cache.set(`user:${offset}:${limit}`, JSON.stringify(users), 60);
+      this.cache.set(cacheKey, JSON.stringify(users), 60);
 
       return data || [];
     } catch (e) {
@@ -381,6 +374,7 @@ export class UserService {
           errorCase: errorCases.USER_NOT_DELETED,
           value: id,
           errorType: 'User',
+          status: 405,
         });
 
       this.cache.cacheState<User>({
@@ -390,16 +384,12 @@ export class UserService {
       });
 
       return deletedUser;
-    } catch (e) {
-      console.log(e.message);
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new CustomErrorException({
-          errorCase: errorCases.USER_NOT_DELETED,
-          value: id,
-          errorType: 'User',
-        });
+    } catch (error) {
+      console.log(error.message);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw error.message;
       }
-      throw e;
+      throw error;
     }
   }
 
@@ -416,36 +406,45 @@ export class UserService {
 
   async UpdateUserPassword(id: string, pass: UpdateUserPasswordDto) {
     try {
+      console.log('step1');
       const { newPassword, oldPassword } = pass;
 
       const data = await this.prisma.$transaction(async ctx => {
         const user = await ctx.user.findUnique({
           where: { id },
           include: {
-            sessions: true,
+            role: true,
           },
         });
 
+        console.log('step2');
+
         if (!user) throw new UserErrorHandler('user', null, errorCases.USER_NOT_FOUND);
 
-        const comparePass = await this.passwordHasher.comparePassword(oldPassword, user.password);
+        const isVerifiedPassword = await this.passwordHasher.comparePassword(
+          oldPassword,
+          user.password,
+        );
 
-        if (!comparePass)
+        console.log(isVerifiedPassword);
+
+        if (isVerifiedPassword === false)
           throw new CustomErrorException({
-            errorCase:
-              'The password you provided is incorrect, please provide the correct password',
+            errorCase: 'The password you provided not match, please provide the correct password',
             errorType: 'User',
             value: id,
+            status: 404,
           });
 
+        console.log('step3');
         const updatedUser = await ctx.user.update({
           where: { id },
           data: {
-            password: pass ? await this.passwordHasher.hashPassword(newPassword) : undefined,
+            password: newPassword ? await this.passwordHasher.hashPassword(newPassword) : undefined,
             updatedAt: new Date(),
           },
           include: {
-            sessions: true,
+            role: true,
           },
         });
 
@@ -454,8 +453,10 @@ export class UserService {
             errorCase: errorCases.USER_NOT_UPDATED,
             value: id,
             errorType: 'User',
+            status: 405,
           });
 
+        console.log('step4');
         return updatedUser;
       });
 
@@ -466,16 +467,14 @@ export class UserService {
       });
 
       return data;
-    } catch (e) {
-      console.log(e.message);
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new CustomErrorException({
-          errorCase: errorCases.USER_NOT_UPDATED,
-          value: id,
-          errorType: 'User',
-        });
+    } catch (error) {
+      console.log(error.message);
+
+      if (error instanceof CustomErrorException) {
+        return error;
       }
-      throw e;
+
+      throw error;
     }
   }
 
@@ -507,16 +506,12 @@ export class UserService {
       this.cache.set('user:' + email, JSON.stringify(user), 60);
 
       return user;
-    } catch (e) {
-      console.log(e.message);
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new CustomErrorException({
-          errorCase: errorCases.USER_NOT_FOUND,
-          value: email,
-          errorType: 'User',
-        });
+    } catch (error) {
+      console.log(error.message);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw error;
       }
-      throw e;
+      throw error;
     }
   }
   /**
@@ -530,16 +525,17 @@ export class UserService {
    */
   async createUserProfile(profile: ProfileUserDto, id: string, file?: Express.Multer.File) {
     const cloud = !file ? undefined : await this.cloud.uploadSingle(file);
+
     try {
       const { bio, birthday, lastName, name } = profile;
 
       const user = await this.prisma.user.update({
         where: { id },
         data: {
-          bio,
-          birthday,
-          lastName,
-          name,
+          bio: bio ? bio : undefined,
+          birthday: birthday ? birthday : undefined,
+          lastName: lastName ? lastName : undefined,
+          name: name ? name : undefined,
           image: cloud && cloud.url ? cloud.url : undefined,
         },
       });
@@ -557,16 +553,12 @@ export class UserService {
         exclude: ['password'],
       });
       return user;
-    } catch (e) {
-      console.log(e);
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new CustomErrorException({
-          errorCase: 'User_profile_not_created',
-          value: id,
-          errorType: 'User',
-        });
+    } catch (error) {
+      console.log(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw error;
       }
-      throw e;
+      throw error;
     }
   }
 }

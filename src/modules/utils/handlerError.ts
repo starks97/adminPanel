@@ -1,7 +1,15 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-type ErrorType = 'User' | 'Role' | 'Permission' | 'RoleSystem' | 'Post' | 'Other' | 'Resource';
+type ErrorType =
+  | 'User'
+  | 'Role'
+  | 'Permission'
+  | 'RoleSystem'
+  | 'Post'
+  | 'Other'
+  | 'Resource'
+  | 'Token';
 
 export const errorCases = {
   USER_NOT_UPDATED: 'user_not_updated',
@@ -25,6 +33,8 @@ export const errorCases = {
   RESOURCE_NOT_FOUND: 'resource_not_found',
   RESOURCE_NOT_UPDATED: 'resource_not_updated',
   INVALID_LIMIT: 'invalid_limit',
+  TOKEN_NOT_FOUND: 'token_not_provided, please login',
+  TOKEN_NOT_SET: 'token_set_to_redis, please check the token if was provided correctly',
 };
 
 interface IHandler {
@@ -33,6 +43,7 @@ interface IHandler {
   value?: string | number | string[];
   status?: number;
   prismaError?: Prisma.PrismaClientKnownRequestError;
+  errorMessage?: string;
 }
 
 export class CustomErrorException extends HttpException {
@@ -42,8 +53,10 @@ export class CustomErrorException extends HttpException {
     value,
     prismaError,
     status = HttpStatus.NOT_FOUND,
+    errorMessage,
   }: IHandler) {
-    let message = `${errorType} with ${value} was not successfully fulfilled, ${errorCase}`;
+    let message =
+      errorMessage || `${errorType} with ${value} was not successfully fulfilled, ${errorCase}`;
 
     if (prismaError) {
       message = `Error in ${errorType} operation: ${prismaError.meta?.message}`;
@@ -74,6 +87,20 @@ export class UserErrorHandler extends CustomErrorException {
       errorCase,
       errorType: 'User',
       prismaError: prismaError,
+    });
+  }
+}
+
+export class AuthErrorHandler extends CustomErrorException {
+  constructor(
+    errorType: IHandler['errorType'],
+    errorCase: IHandler['errorCase'],
+    status: IHandler['status'],
+  ) {
+    super({
+      errorType,
+      errorCase,
+      status,
     });
   }
 }

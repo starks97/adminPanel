@@ -19,7 +19,6 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
-import { MiddlewareConfigProxy } from '@nestjs/common/interfaces';
 
 @Module({
   controllers: [UserController],
@@ -36,6 +35,7 @@ import { MiddlewareConfigProxy } from '@nestjs/common/interfaces';
 })
 export class UserModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware);
     consumer
       .apply(CacheShieldMiddleware)
       .exclude({ path: 'user', method: RequestMethod.GET })

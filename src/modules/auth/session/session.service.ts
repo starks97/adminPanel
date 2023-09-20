@@ -100,6 +100,7 @@ export class SessionManagerService {
       const session = await ctx.session.create({
         data: {
           token,
+
           User: {
             connect: {
               id: userId,
@@ -124,32 +125,17 @@ export class SessionManagerService {
    * @throws Error if the user is not found or the session is not updated.
    */
 
-  async updateSession(userId: string, token: string) {
-    return await this.prisma.$transaction(async ctx => {
-      const user = await ctx.user.findUnique({
-        where: {
-          id: userId,
-        },
-        include: {
-          sessions: true,
-        },
-      });
-
-      if (!user) throw new Error('user_not_found');
-
-      const session = await ctx.session.update({
-        where: {
-          id: user.sessions[0].id,
-        },
-        data: {
-          token,
-        },
-      });
-
-      if (!session) throw new Error('session_not_updated');
-
-      return session;
+  async updateSession(token: string) {
+    const session = await this.prisma.session.update({
+      where: {
+        token,
+      },
+      data: {
+        token,
+      },
     });
+
+    return session;
   }
 
   /**
@@ -194,24 +180,15 @@ export class SessionManagerService {
    * @throws ForbiddenException if the user is not found.
    * @throws Error if the session is not found.
    */
-  async findSessionByUser(userId: string, token: string) {
-    return await this.prisma.$transaction(async ctx => {
-      const user = await ctx.user.findUnique({
-        where: {
-          id: userId,
-        },
-        include: {
-          sessions: true,
-        },
-      });
-
-      if (!user) throw new ForbiddenException('user_not_found');
-
-      const session = user.sessions.find(session => session.token === token);
-
-      if (!session) throw new Error('session_not_found');
-
-      return user;
+  async findSession(token: string) {
+    const session = await this.prisma.session.findUnique({
+      where: {
+        token,
+      },
     });
+
+    if (!session) return null;
+
+    return session;
   }
 }

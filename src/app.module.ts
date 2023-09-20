@@ -11,7 +11,6 @@ import { MailModule } from './modules/mail/mail.module';
 import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RoleSystemModule } from './modules/role-system/role-system.module';
-import { CommentsGateway } from './modules/blog/comments/comments.gateway';
 
 @Module({
   imports: [
@@ -34,7 +33,6 @@ import { CommentsGateway } from './modules/blog/comments/comments.gateway';
       provide: APP_PIPE,
       useClass: ZodValidationPipe,
     },
-    CommentsGateway,
   ],
 })
 export class AppModule {}

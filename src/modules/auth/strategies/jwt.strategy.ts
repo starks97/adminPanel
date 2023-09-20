@@ -1,14 +1,15 @@
-import { ForbiddenException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { JWTPayload } from './../interfaces/jwt.interface';
-import { PrismaService } from '../../../../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
+import { AUTH_TOKEN } from 'src/consts';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(private readonly configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         JwtStrategy.extractJWT,
@@ -16,23 +17,23 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       ]),
 
       ignoreExpiration: false,
-      secretOrKey: process.env.SECRET_JWT_KEY as string,
+      secretOrKey: configService.get('SECRET_JWT_KEY'),
     });
   }
 
   private static extractJWT(req: Request): string | null {
     const authHeader = req.headers.authorization;
+
     if (authHeader && authHeader.split(' ')[0] === 'Bearer') {
       return authHeader.split(' ')[1];
     }
 
-    if (req.cookies && 'auth_token' in req.cookies && req.cookies.auth_token.length > 0) {
+    if (req.cookies && AUTH_TOKEN in req.cookies && req.cookies.auth_token.length > 0) {
       return req.cookies.auth_token;
     }
     return null;
   }
 
-  //return decoded token
   async validate(payload: JWTPayload) {
     if (!payload) throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
 

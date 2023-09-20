@@ -1,5 +1,4 @@
 import { createZodDto } from 'nestjs-zod';
-import { UserSchema } from './create-user.dto';
 import { z } from 'nestjs-zod/z';
 
 const UserProfileSchema = z.object({
@@ -8,8 +7,8 @@ const UserProfileSchema = z.object({
     .min(40, { message: 'bio is too short, please use at least 40 characters' })
     .max(120, { message: 'bio is too long, please use at least 120 characters' })
     .optional(),
-  lastName: z.string().min(3, { message: 'lastName is too short' }),
-  birthday: z.string(),
+  lastName: z.string().min(3, { message: 'lastName is too short' }).optional(),
+  birthday: z.string().optional(),
   name: z.string().min(3, { message: 'name is too short' }).optional(),
 });
 

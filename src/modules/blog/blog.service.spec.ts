@@ -8,9 +8,6 @@ import { PrismaModule } from '../../../prisma/prisma.module';
 import { CACHE_MANAGER, CacheModule } from '@nestjs/common';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
-import * as redisMock from 'redis-mock';
-import * as redisStore from 'cache-manager-redis-store';
-import { Cache } from 'cache-manager';
 
 describe('BlogService', () => {
   let service: BlogService;
