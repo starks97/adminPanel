@@ -218,20 +218,20 @@ export class BlogService {
    * @throws {CustomErrorException} If there is a general error during retrieval.
    */
   async findPostBySlug(slug: string) {
-    const dataCache = JSON.parse(await this.cache.get(cacheBlogSlugKey));
+    const dataCache = JSON.parse(await this.cache.get(`blog:${slug}`));
     if (dataCache) return dataCache;
     try {
       const post = await this.prisma.post.findFirst({
-        where: { slug },
+        where: { slug, published: true },
         include: {
           resources: true,
           user: true,
         },
       });
 
-      if (!post) throw new PostNotFoundError(slug);
+      if (!post || post.published === false) throw new PostNotFoundError(slug);
 
-      this.cache.set(cacheBlogSlugKey, JSON.stringify(post), 60 * 2);
+      this.cache.set(`blog:${slug}`, JSON.stringify(post), 60 * 2);
 
       return post;
     } catch (e) {
