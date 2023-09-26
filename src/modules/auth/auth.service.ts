@@ -5,7 +5,6 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto, LoginUserDto } from './../user/dto';
 import { UserService } from './../user/user.service';
 import { JWTPayload, LoginStatus, RegistrationStatus } from './interfaces';
-import { SessionManagerService } from './session/session.service';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { AUTH_TOKEN, REFRESH_TOKEN } from 'src/consts';
 import { PassHasherService } from '../user/pass-hasher/pass-hasher.service';
@@ -56,7 +55,6 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly session: SessionManagerService,
     private readonly cache: CacheSystemService,
     private readonly hasher: PassHasherService,
   ) {
@@ -109,7 +107,11 @@ export class AuthService {
       });
     }
 
-    const tokens = await this._createTokens({ id: user.id, email: user.email });
+    const tokens = await this._createTokens({
+      id: user.id,
+      email: user.email,
+      iat: Math.floor(Date.now() / 1000),
+    });
 
     this.cache.setTokentoRedis(`dataUser:${user.email}`, tokens.refreshToken);
 
@@ -144,6 +146,7 @@ export class AuthService {
       const tokens = await this._createTokens({
         id,
         email,
+        iat: Math.floor(Date.now() / 1000),
       });
 
       const storedTokens = await this.cache.getTokenFromRedis(refreshTokenKey);
@@ -190,11 +193,11 @@ export class AuthService {
    * @param token - The JWT token to be decoded.
    * @returns The decoded payload as an object of type `JWTPayload`.
    */
-  _decodeToken(token: string) {
+  private _decodeToken(token: string) {
     try {
       if (!token) throw new AuthErrorHandler('Token', errorCases.TOKEN_NOT_FOUND, 403);
 
-      return this.jwtService.decode(token) as JWTPayload;
+      return this.jwtService.decode(token, { complete: true }) as JWTPayload;
     } catch (error) {
       console.log(error);
       throw error;

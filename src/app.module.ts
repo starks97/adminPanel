@@ -1,7 +1,7 @@
 import { CloudinarySystemModule } from './modules/cloudinary/cloudinary-system.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 
 import { AuthModule } from './modules/auth/auth.module';
@@ -11,6 +11,7 @@ import { MailModule } from './modules/mail/mail.module';
 import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RoleSystemModule } from './modules/role-system/role-system.module';
+import { CustomExceptionFilter } from './filter';
 
 @Module({
   imports: [

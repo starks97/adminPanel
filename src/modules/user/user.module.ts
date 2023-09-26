@@ -1,6 +1,6 @@
 import { CacheShieldMiddleware } from './../../middlewares/cacheShield.midddleware';
 import { JwtService } from '@nestjs/jwt';
-import { LoggerMiddleware } from '../../middlewares/logger.middleware';
+
 import { CloudinarySystemModule } from '../cloudinary/cloudinary-system.module';
 import { AuthModule } from '../auth/auth.module';
 import { RoleSystemModule } from '../role-system/role-system.module';
@@ -9,7 +9,6 @@ import {
   Module,
   NestModule,
   RequestMethod,
-  Type,
   forwardRef,
   NestMiddleware,
 } from '@nestjs/common';
@@ -22,7 +21,7 @@ import { CacheSystemModule } from '../cache-system/cache-system.module';
 
 @Module({
   controllers: [UserController],
-  providers: [UserService, LoggerMiddleware, JwtService],
+  providers: [UserService, JwtService],
   exports: [UserService],
   imports: [
     CacheSystemModule,
@@ -35,7 +34,6 @@ import { CacheSystemModule } from '../cache-system/cache-system.module';
 })
 export class UserModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware);
     consumer
       .apply(CacheShieldMiddleware)
       .exclude({ path: 'user', method: RequestMethod.GET })

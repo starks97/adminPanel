@@ -9,7 +9,8 @@ type ErrorType =
   | 'Post'
   | 'Other'
   | 'Resource'
-  | 'Token';
+  | 'Token'
+  | 'Prisma';
 
 export const errorCases = {
   USER_NOT_UPDATED: 'user_not_updated',
@@ -41,7 +42,7 @@ interface IHandler {
   errorType: ErrorType;
   errorCase: string;
   value?: string | number | string[];
-  status?: number;
+  status?: HttpStatus;
   prismaError?: Prisma.PrismaClientKnownRequestError;
   errorMessage?: string;
 }
@@ -57,6 +58,10 @@ export class CustomErrorException extends HttpException {
   }: IHandler) {
     let message =
       errorMessage || `${errorType} with ${value} was not successfully fulfilled, ${errorCase}`;
+
+    if (!value) {
+      message = `${errorType} was not successfully fulfilled, ${errorCase}`;
+    }
 
     if (prismaError) {
       message = `Error in ${errorType} operation: ${prismaError.meta?.message}`;

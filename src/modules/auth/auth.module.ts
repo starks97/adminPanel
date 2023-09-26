@@ -12,7 +12,6 @@ import { PrismaModule } from '../../../prisma/prisma.module';
 import { CacheSystemModule } from '../cache-system/cache-system.module';
 import { RoleGuard } from './guards/role.guard';
 import { PassHasherModule } from '../user/pass-hasher/pass-hasher.module';
-import { LoggerMiddleware } from 'src/middlewares/logger.middleware';
 
 @Module({
   controllers: [AuthController],
@@ -23,7 +22,6 @@ import { LoggerMiddleware } from 'src/middlewares/logger.middleware';
     RefreshTokenStrategy,
     RoleGuard,
     ConfigService,
-    LoggerMiddleware,
   ],
   imports: [
     forwardRef(() => UserModule),

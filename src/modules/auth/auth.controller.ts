@@ -70,20 +70,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout' })
   @ApiResponse({ status: 200, description: 'Successful logout' })
   async logout(@Res() res: Response, @Req() req: Request) {
-    try {
-      this.authService.deleteUserSession(req.user['email']);
-      res.setHeader('auth', null);
-      res.clearCookie(REFRESH_TOKEN);
-
-      return res.status(200).json({ message: 'user_logged_out', success: true });
-    } catch (error) {
-      if (error instanceof CustomErrorException) {
-        return res.status(error.getStatus()).json({ message: error.message });
-      } else {
-        console.error(error);
-        return res.status(500).json({ message: 'An error occurred' });
-      }
+    this.authService.deleteUserSession(req.user['email']);
+    if (req.headers.authorization) {
+      delete req.headers.authorization;
     }
+    res.clearCookie(REFRESH_TOKEN);
+
+    return res.status(200).json({ message: 'user_logged_out', success: true });
   }
 
   @UseGuards(RefreshTokenGuard)

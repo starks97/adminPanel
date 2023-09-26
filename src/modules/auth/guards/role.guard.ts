@@ -1,9 +1,9 @@
 import { AuthErrorHandler, CustomErrorException, errorCases } from './../../utils/handlerError';
-import { AuthService } from './../auth.service';
 import { PrismaService } from './../../../../prisma/prisma.service';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Permissions } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
 /**
  * RoleGuard is an injectable class that implements the CanActivate interface to provide role-based
  * authorization for endpoints.
@@ -20,7 +20,7 @@ export class RoleGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
-    private readonly auth: AuthService,
+    private readonly jwtService: JwtService,
   ) {}
   /**
    * Check if the user has the required permissions to access the requested endpoint.
@@ -54,13 +54,11 @@ export class RoleGuard implements CanActivate {
 
       if (!token) return false;
 
-      const decodeToken = this.auth._decodeToken(token);
-
-      if (!decodeToken) throw new AuthErrorHandler('Token', errorCases.TOKEN_NOT_FOUND, 405);
+      const decodeToken = this.jwtService.decode(token);
 
       const user = await this.prisma.user.findUnique({
         where: {
-          id: decodeToken.id,
+          id: decodeToken['id'],
         },
         include: {
           role: true,

@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UploadedFile,
   UseGuards,
@@ -23,7 +24,6 @@ import {
   ApiParam,
   ApiQuery,
   ApiResponse,
-  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
@@ -34,8 +34,6 @@ import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Permission } from '../auth/decorator/permissio.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CustomErrorException } from '../utils';
-import { Prisma } from '@prisma/client';
 
 @ApiTags('User')
 @Controller('user')
@@ -76,18 +74,9 @@ export class UserController {
     @Body('roleName') roleName: string,
     @Res() res: Response,
   ) {
-    try {
-      const response = await this.userService.AssignRoleToUser(id, roleName);
+    const response = await this.userService.AssignRoleToUser(id, roleName);
 
-      return res.status(200).json({ message: 'role_assigned', data: response });
-    } catch (error) {
-      if (error instanceof CustomErrorException) {
-        return res.status(error.getStatus()).json({ message: error.message });
-      } else {
-        console.error(error);
-        return res.status(500).json({ message: 'An error occurred' });
-      }
-    }
+    return res.status(200).json({ message: 'role_assigned', data: response });
   }
   @Permission(['UPDATE'])
   @Get('/:id')
@@ -104,21 +93,16 @@ export class UserController {
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserPasswordDto,
     @Res() res: Response,
+    @Req() req: Request,
   ) {
-    try {
-      const response = await this.userService.UpdateUserPassword(id, updateUserDto);
+    await this.userService.UpdateUserPassword(id, updateUserDto);
 
-      //res.removeHeader('auth_token');
-      //res.clearCookie('refresh_token');
-      return res.status(200).json({ message: 'user_updated', response });
-    } catch (error) {
-      if (error instanceof CustomErrorException) {
-        return res.status(error.getStatus()).json({ message: error.message });
-      } else {
-        console.error(error);
-        return res.status(500).json({ message: 'An error occurred' });
-      }
+    res.clearCookie('refresh_token');
+    if (req.headers.authorization) {
+      delete req.headers.authorization;
     }
+
+    return res.status(200).json({ message: 'user_updated', success: true });
   }
   @Permission(['DELETE'])
   @Delete('/:id')
@@ -126,21 +110,14 @@ export class UserController {
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
   @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
-  async removeUser(@Param('id') id: string, @Res() res: Response) {
-    try {
-      const response = await this.userService.DeleteUser(id);
-      res.removeHeader('auth_token');
-      res.clearCookie('refresh_token');
-
-      return res.status(200).json({ message: 'user_deleted', response });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        return res.status(+error.code).json({ message: error.message });
-      } else {
-        console.error(error);
-        return res.status(500).json({ message: 'An error occurred' });
-      }
+  async removeUser(@Param('id') id: string, @Res() res: Response, @Req() req: Request) {
+    await this.userService.DeleteUser(id);
+    res.clearCookie('refresh_token');
+    if (req.headers.authorization) {
+      delete req.headers.authorization;
     }
+
+    return res.status(200).json({ message: 'user_deleted', success: true });
   }
   @Permission(['CREATE'])
   @UseInterceptors(FileInterceptor('file'))
@@ -158,7 +135,6 @@ export class UserController {
         name: { type: 'string' },
         files: { type: 'array', items: { type: 'string', format: 'binary' } },
       },
-      required: ['lastName', 'birthday'],
     },
   })
   @ApiResponse({ status: 200, description: 'User profile created successfully' })

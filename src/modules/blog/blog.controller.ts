@@ -172,9 +172,10 @@ export class BlogController {
             message: 'Max file size allowed is 10MB',
           }),
         ],
+        fileIsRequired: false,
       }),
     )
-    files: Array<Express.Multer.File>,
+    files: Array<Express.Multer.File> | undefined,
     @Res() res: Response,
   ) {
     const response = await this.blogService.updatePost(id, updateBlogDto, files);

@@ -1,6 +1,6 @@
 import { CustomErrorException, errorCases, UserErrorHandler } from './../utils/handlerError';
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import { Prisma, PrismaClient, User } from '@prisma/client';
 
 import { CreateUserDto, LoginUserDto, ProfileUserDto, SearchUserDto } from './dto';
 import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
@@ -8,6 +8,10 @@ import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
+import {
+  PrismaClientInitializationError,
+  PrismaClientKnownRequestError,
+} from '@prisma/client/runtime';
 
 @Injectable()
 export class UserService {
@@ -377,6 +381,7 @@ export class UserService {
           status: 405,
         });
 
+      //this.cache.cacheInValidation(`dataUser:${data.email}`);
       this.cache.cacheState<User>({
         model: 'user',
         storeKey: 'users',
@@ -406,7 +411,6 @@ export class UserService {
 
   async UpdateUserPassword(id: string, pass: UpdateUserPasswordDto) {
     try {
-      console.log('step1');
       const { newPassword, oldPassword } = pass;
 
       const data = await this.prisma.$transaction(async ctx => {
@@ -417,16 +421,12 @@ export class UserService {
           },
         });
 
-        console.log('step2');
-
         if (!user) throw new UserErrorHandler('user', null, errorCases.USER_NOT_FOUND);
 
         const isVerifiedPassword = await this.passwordHasher.comparePassword(
           oldPassword,
           user.password,
         );
-
-        console.log(isVerifiedPassword);
 
         if (isVerifiedPassword === false)
           throw new CustomErrorException({
@@ -436,7 +436,6 @@ export class UserService {
             status: 404,
           });
 
-        console.log('step3');
         const updatedUser = await ctx.user.update({
           where: { id },
           data: {
@@ -456,9 +455,10 @@ export class UserService {
             status: 405,
           });
 
-        console.log('step4');
         return updatedUser;
       });
+
+      this.cache.cacheInValidation(`dataUser:${data.email}`);
 
       this.cache.cacheState<User>({
         model: 'user',
@@ -471,7 +471,16 @@ export class UserService {
       console.log(error.message);
 
       if (error instanceof CustomErrorException) {
-        return error;
+        throw error;
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomErrorException({
+          errorCase: errorCases.PRISMA_ERROR,
+          errorType: 'Prisma',
+          prismaError: error,
+          status: 500,
+        });
       }
 
       throw error;
