@@ -66,6 +66,7 @@ export class BlogService {
           errorType: 'Post',
           value: 'title',
           errorCase: errorCases.POST_ALREADY_EXISTS,
+          status: 400,
         });
 
       const post = await this.prisma.post.create({
@@ -99,6 +100,7 @@ export class BlogService {
         throw new CustomErrorException({
           errorCase: errorCases.POST_NOT_CREATED,
           errorType: 'Post',
+          status: 400,
         });
 
       this.cache.cacheState<Post>({
@@ -125,7 +127,7 @@ export class BlogService {
    */
   async findAllPosts(offset: number, limit: number) {
     const cacheKey = `blog:offset:${offset}:limit:${limit}`;
-    const dataFromCacheShield = await this.cache.cachePagination({
+    const dataFromCacheShield = await this.cache.cachePagination<Post>({
       limit,
       offset,
       newKey: 'blog',
@@ -146,7 +148,9 @@ export class BlogService {
         orderBy: {
           createdAt: 'desc',
         },
-
+        where: {
+          published: true,
+        },
         include: {
           resources: true,
           user: true,
@@ -157,7 +161,7 @@ export class BlogService {
 
       this.cache.set(cacheKey, JSON.stringify(posts), 60 * 2);
 
-      return data || [];
+      return data;
     } catch (e) {
       console.log(e.message);
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
@@ -284,6 +288,7 @@ export class BlogService {
       const posts = await this.prisma.post.findMany({
         where: {
           OR: [where],
+          published: true,
         },
         skip: skipCount <= 0 ? 0 : skipCount,
         take: +limit || 10,

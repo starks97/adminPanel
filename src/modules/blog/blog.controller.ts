@@ -37,7 +37,6 @@ import {
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { Category } from '@prisma/client';
 
 @ApiTags('Blog')
 @Controller('blog')
@@ -105,10 +104,10 @@ export class BlogController {
     )
     files: Array<Express.Multer.File>,
   ) {
-    const user = req.user['id'];
+    const user = req.headers.user['id'];
 
     const post = await this.blogService.createPost(user, createPostDto, files);
-    return res.status(200).json({ message: 'Post created successfully', post });
+    return res.status(200).json({ message: 'Post created successfully', data: post });
   }
 
   @Get('/post')
@@ -138,7 +137,7 @@ export class BlogController {
   @ApiResponse({ status: 200, description: 'Post found successfully' })
   async findPostBySlug(@Param('slug') slug: string, @Res() res: Response) {
     const response = await this.blogService.findPostBySlug(slug);
-    return res.status(200).json({ message: 'Post found successfully', response });
+    return res.status(200).json({ message: 'Post found successfully', data: response });
   }
 
   @Get('post/:id')
@@ -147,7 +146,7 @@ export class BlogController {
   @ApiResponse({ status: 200, description: 'Post found successfully' })
   async findPost(@Param('id') id: string, @Res() res: Response, @Req() req: Request) {
     const response = await this.blogService.findPostById(id);
-    return res.status(200).json({ message: 'Post found successfully', response });
+    return res.status(200).json({ message: 'Post found successfully', data: response });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -180,7 +179,9 @@ export class BlogController {
   ) {
     const response = await this.blogService.updatePost(id, updateBlogDto, files);
 
-    return res.status(200).json({ message: 'Post updated successfully', response });
+    return res
+      .status(200)
+      .json({ message: `Post with id:${response.id} updated successfully`, data: response });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -193,6 +194,6 @@ export class BlogController {
   async remove(@Param('id') id: string, @Res() res: Response) {
     await this.blogService.deletePost(id);
 
-    return res.status(200).json({ message: `Post ${id} was deleted successfully` });
+    return res.status(200).json({ message: `Post with:${id} was deleted successfully` });
   }
 }

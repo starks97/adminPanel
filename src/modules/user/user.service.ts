@@ -1,6 +1,6 @@
 import { CustomErrorException, errorCases, UserErrorHandler } from './../utils/handlerError';
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, PrismaClient, User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 
 import { CreateUserDto, LoginUserDto, ProfileUserDto, SearchUserDto } from './dto';
 import { UpdateUserPasswordDto } from './dto/updatePass-user.dto';
@@ -8,10 +8,6 @@ import { PassHasherService } from './pass-hasher/pass-hasher.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { CloudinarySystemService } from '../cloudinary/cloudinary-system.service';
-import {
-  PrismaClientInitializationError,
-  PrismaClientKnownRequestError,
-} from '@prisma/client/runtime';
 
 @Injectable()
 export class UserService {
