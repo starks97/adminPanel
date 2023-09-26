@@ -153,16 +153,16 @@ export class AuthService {
 
       if (!Array.isArray(storedTokens))
         throw new CustomErrorException({
-          errorCase: errorCases.TOKEN_NOT_SET,
-          value: token,
+          errorCase:
+            'Unable to retrieve data from the token storage. Please check the Redis connection.',
           errorType: 'Token',
           status: 400,
         });
 
       if (!storedTokens.includes(token))
         throw new CustomErrorException({
-          errorCase: errorCases.TOKEN_NOT_FOUND,
-          value: token,
+          errorCase:
+            'The token was provided it wasnt found in DB, please make sure you are providing the correct token',
           errorType: 'Token',
           status: 404,
         });
@@ -193,11 +193,11 @@ export class AuthService {
    * @param token - The JWT token to be decoded.
    * @returns The decoded payload as an object of type `JWTPayload`.
    */
-  private _decodeToken(token: string) {
+  private _decodeToken(token: string): JWTPayload | null {
     try {
       if (!token) throw new AuthErrorHandler('Token', errorCases.TOKEN_NOT_FOUND, 403);
 
-      return this.jwtService.decode(token, { complete: true }) as JWTPayload;
+      return this.jwtService.decode(token) as JWTPayload;
     } catch (error) {
       console.log(error);
       throw error;

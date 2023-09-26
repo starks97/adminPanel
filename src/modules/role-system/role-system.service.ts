@@ -1,9 +1,9 @@
 import { PrismaService } from './../../../prisma/prisma.service';
-import { Injectable, ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateRoleSystemDto } from './dto/create-role-system.dto';
 import { UpdateRoleSystemDto } from './dto/update-role-system.dto';
 
-import { CustomErrorException } from '../utils';
+import { CustomErrorException, errorCases } from '../utils';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -18,32 +18,57 @@ export class RoleSystemService {
    * @throws CustomErrorException if the role creation fails.
    */
   async createRole(createRoleSystemDto: CreateRoleSystemDto) {
-    const { name, permissions } = createRoleSystemDto;
+    try {
+      const { name, permissions } = createRoleSystemDto;
 
-    const role_in_db = await this.prisma.role.findFirst({
-      where: {
-        name,
-      },
-    });
-
-    if (role_in_db) throw new ForbiddenException('role_already_exists');
-
-    const role = await this.prisma.role.create({
-      data: {
-        name,
-        permissions: permissions || 'READ',
-        createdAt: new Date(),
-      },
-    });
-
-    if (!role)
-      throw new CustomErrorException({
-        errorType: 'Role',
-        value: 'name',
-        errorCase: 'role_not_created',
+      const role_in_db = await this.prisma.role.findFirst({
+        where: {
+          name,
+        },
       });
 
-    return role;
+      if (role_in_db)
+        throw new CustomErrorException({
+          errorType: 'Role',
+          errorCase: errorCases.ROLE_ALREADY_EXIST,
+          value: name,
+          status: 409,
+        });
+
+      const role = await this.prisma.role.create({
+        data: {
+          name,
+          permissions: permissions || 'READ',
+          createdAt: new Date(),
+        },
+      });
+
+      if (!role)
+        throw new CustomErrorException({
+          errorType: 'Role',
+          value: 'name',
+          errorCase: 'role_not_created',
+          status: 400,
+        });
+
+      return role;
+    } catch (error) {
+      console.log(error.message);
+      if (error instanceof CustomErrorException) {
+        throw error;
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        console.log('Prisma Error:', error);
+        throw new CustomErrorException({
+          errorType: 'Role',
+          errorCase: 'prisma_error',
+          prismaError: error,
+          status: 500,
+        });
+      }
+      throw error.message;
+    }
   }
   /**
    * Retrieve all roles from the database.
@@ -51,19 +76,23 @@ export class RoleSystemService {
    * @returns A promise that resolves to an array of roles.
    */
   async findAllRoles() {
-    const roles = await this.prisma.role.findMany({
-      select: {
-        name: true,
-        permissions: true,
-        createdAt: true,
-        updatedAt: true,
-        user: true,
-      },
-    });
+    try {
+      const roles = await this.prisma.role.findMany({
+        select: {
+          name: true,
+          permissions: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
 
-    const data = { roles, total: roles.length };
+      const data = { roles, total: roles.length };
 
-    return data ?? [];
+      return data ?? [];
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
   /**
@@ -73,34 +102,39 @@ export class RoleSystemService {
    * @returns A promise that resolves to the found role.
    * @throws CustomErrorException if the role is not found or an error occurs during the retrieval.
    */
-  async findRoleByName(name: string) {
+  async findRoleByName(query: string) {
     try {
       const role = await this.prisma.role.findUnique({
         where: {
-          name,
+          name: query,
         },
       });
 
       if (!role)
         throw new CustomErrorException({
           errorType: 'Role',
-          value: 'name',
+          value: query,
           errorCase: 'role_not_found',
+          status: 404,
         });
 
       return role;
-    } catch (e) {
-      console.log(e);
-      if (e instanceof CustomErrorException) {
-        throw e;
-      } else {
+    } catch (error) {
+      console.log(error.message);
+      if (error instanceof CustomErrorException) {
+        throw error;
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        console.log('Prisma Error:', error);
         throw new CustomErrorException({
-          errorCase: 'post_not_found',
-          errorType: 'Post',
-          value: e,
-          prismaError: e as Prisma.PrismaClientKnownRequestError,
+          errorType: 'Role',
+          errorCase: 'prisma_error',
+          prismaError: error,
+          status: 404,
         });
       }
+      throw error.message;
     }
   }
   /**
@@ -111,20 +145,39 @@ export class RoleSystemService {
    * @throws CustomErrorException if the role is not found.
    */
   async findRoleById(id: string) {
-    const role = await this.prisma.role.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!role)
-      throw new CustomErrorException({
-        errorType: 'Role',
-        value: 'id',
-        errorCase: 'role_not_found',
+    try {
+      const role = await this.prisma.role.findUnique({
+        where: {
+          id,
+        },
       });
 
-    return role;
+      if (!role)
+        throw new CustomErrorException({
+          errorType: 'Role',
+          value: id,
+          errorCase: 'role_not_found',
+          status: 404,
+        });
+
+      return role;
+    } catch (error) {
+      console.log(error.message);
+      if (error instanceof CustomErrorException) {
+        throw error;
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        console.log('Prisma Error:', error);
+        throw new CustomErrorException({
+          errorType: 'Role',
+          errorCase: 'prisma_error',
+          prismaError: error,
+          status: 404,
+        });
+      }
+      throw error.message;
+    }
   }
   /**
    * Update a role in the database based on its ID.
@@ -135,28 +188,47 @@ export class RoleSystemService {
    * @throws CustomErrorException if the role is not updated.
    */
   async updateRole(id: string, updateRoleDto: UpdateRoleSystemDto) {
-    const { name, permissions } = updateRoleDto;
-    const role = await this.prisma.role.update({
-      where: {
-        id,
-      },
-      data: {
-        permissions,
-        name,
-      },
-      include: {
-        user: true,
-      },
-    });
-
-    if (!role)
-      throw new CustomErrorException({
-        errorType: 'Role',
-        value: 'id',
-        errorCase: 'role_not_updated',
+    try {
+      const { name, permissions } = updateRoleDto;
+      const role = await this.prisma.role.update({
+        where: {
+          id,
+        },
+        data: {
+          permissions,
+          name,
+        },
+        include: {
+          user: true,
+        },
       });
 
-    return role;
+      if (!role)
+        throw new CustomErrorException({
+          errorType: 'Role',
+          value: id,
+          errorCase: 'role_not_updated',
+          status: 400,
+        });
+
+      return role;
+    } catch (error) {
+      console.log(error.message);
+      if (error instanceof CustomErrorException) {
+        throw error;
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        console.log('Prisma Error:', error);
+        throw new CustomErrorException({
+          errorType: 'Role',
+          errorCase: 'prisma_error',
+          prismaError: error,
+          status: 404,
+        });
+      }
+      throw error.message;
+    }
   }
   /**
    * Delete a role from the database based on its ID.
@@ -166,19 +238,38 @@ export class RoleSystemService {
    * @throws CustomErrorException if the role is not deleted.
    */
   async deleteRole(id: string) {
-    const role = await this.prisma.role.delete({
-      where: {
-        id,
-      },
-    });
-
-    if (!role)
-      throw new CustomErrorException({
-        errorType: 'Role',
-        value: 'id',
-        errorCase: 'role_not_deleted',
+    try {
+      const role = await this.prisma.role.delete({
+        where: {
+          id,
+        },
       });
 
-    return role;
+      if (!role)
+        throw new CustomErrorException({
+          errorType: 'Role',
+          value: id,
+          errorCase: 'role_not_deleted',
+          status: 404,
+        });
+
+      return role;
+    } catch (error) {
+      console.log(error.message);
+      if (error instanceof CustomErrorException) {
+        throw error;
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        console.log('Prisma Error:', error);
+        throw new CustomErrorException({
+          errorType: 'Role',
+          errorCase: 'prisma_error',
+          prismaError: error,
+          status: 404,
+        });
+      }
+      throw error.message;
+    }
   }
 }

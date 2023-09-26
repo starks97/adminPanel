@@ -60,9 +60,9 @@ export class RoleSystemController {
   })
   @ApiQuery({ name: 'name', description: 'Name of the role', required: false })
   @ApiResponse({ status: 200, description: 'Roles Found' })
-  async findAllRoles(@Query('name') name: string, @Res() res: Response) {
-    if (name) {
-      const response = await this.roleSystemService.findRoleByName(name);
+  async findAllRoles(@Query('q') query: string, @Res() res: Response) {
+    if (query) {
+      const response = await this.roleSystemService.findRoleByName(query);
       return res.status(200).json({ message: `role was succesfully found`, data: response });
     }
 
@@ -79,8 +79,9 @@ export class RoleSystemController {
   @ApiParam({ name: 'id', description: 'ID of the role' })
   @ApiResponse({ status: 200, description: 'Role Found' })
   @ApiResponse({ status: 404, description: 'Role Not Found' })
-  async findRoleById(@Param('id') id: string) {
-    return await this.roleSystemService.findRoleById(id);
+  async findRoleById(@Param('id') id: string, @Res() res: Response) {
+    const response = await this.roleSystemService.findRoleById(id);
+    return res.status(200).json({ message: `role was succesfully found`, data: response });
   }
 
   @Permission(['UPDATE'])
@@ -102,7 +103,7 @@ export class RoleSystemController {
 
     return res
       .status(200)
-      .json({ message: `role with id: ${response.id} was succesfully updated` });
+      .json({ message: `role with id:'${response.id}' was succesfully updated` });
   }
   @Permission(['DELETE'])
   @Delete('/:id')
@@ -117,6 +118,6 @@ export class RoleSystemController {
 
     return res
       .status(200)
-      .json({ message: `role with id: ${response.id} was succesfully deleted` });
+      .json({ message: `role with id:'${response.id}' was succesfully deleted` });
   }
 }

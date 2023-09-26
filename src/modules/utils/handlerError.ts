@@ -57,7 +57,7 @@ export class CustomErrorException extends HttpException {
     errorMessage,
   }: IHandler) {
     let message =
-      errorMessage || `${errorType} with ${value} was not successfully fulfilled, ${errorCase}`;
+      errorMessage || `${errorType} with '${value}' was not successfully fulfilled, ${errorCase}`;
 
     if (!value) {
       message = `${errorType} was not successfully fulfilled, ${errorCase}`;
