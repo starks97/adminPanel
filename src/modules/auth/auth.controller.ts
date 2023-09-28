@@ -62,7 +62,7 @@ export class AuthController {
       httpOnly: true,
     });
 
-    return res.status(200).json(response.data.rest);
+    return res.status(200).json(response);
   }
 
   @UseGuards(JwtAuthGuard)

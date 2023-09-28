@@ -106,16 +106,19 @@ export class UserService {
       });
 
       if (!user) {
-        throw new HttpException('user_not_found', HttpStatus.NOT_FOUND);
+        throw new CustomErrorException({
+          errorCase: 'The email that you provided is incorrect. Please provide the correct email.',
+          status: 404,
+        });
       }
 
       const isVerifiedPassword = await this.passwordHasher.comparePassword(password, user.password);
 
       if (!isVerifiedPassword)
         throw new CustomErrorException({
-          errorCase: 'The password you provided not match, please provide the correct password',
-          errorType: 'User',
-          value: email,
+          errorCase:
+            'The password that you provided does not match. Please provide the correct password.',
+          status: 403,
         });
 
       return user;

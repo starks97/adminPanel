@@ -39,7 +39,7 @@ export const errorCases = {
 };
 
 interface IHandler {
-  errorType: ErrorType;
+  errorType?: ErrorType;
   errorCase: string;
   value?: string | number | string[];
   status?: HttpStatus;
@@ -61,6 +61,9 @@ export class CustomErrorException extends HttpException {
 
     if (!value) {
       message = `${errorType} was not successfully fulfilled, ${errorCase}`;
+    }
+    if (!errorType) {
+      message = `${errorCase}`;
     }
 
     if (prismaError) {
