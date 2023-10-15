@@ -61,6 +61,17 @@ export class UserController {
     return res.status(200).json({ message: 'Users found successfully', data: response });
   }
 
+  @Permission(['CREATE'])
+  @Get('/profile')
+  @ApiOperation({ summary: 'Get user profile', description: 'Get user profile' })
+  @ApiResponse({ status: 200, description: 'User profile found successfully' })
+  @ApiResponse({ status: 403, description: 'Token not found, please login to continue' })
+  async findUserProfile(@Req() req: Request, @Res() res: Response) {
+    const response = await this.userService.FindUserById(req.headers.user['id']);
+
+    return res.status(200).json({ message: 'user_profile_found', data: response });
+  }
+
   @Permission(['UPDATE'])
   @Post('/:id')
   @ApiOperation({ summary: 'Asign role to user', description: 'Asign role to user' })

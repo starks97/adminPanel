@@ -113,14 +113,11 @@ export class AuthService {
 
     this.cache.setTokentoRedis(`dataUser:${user.email}`, tokens.refreshToken);
 
-    const { id, password: pass, ...rest } = user;
-
     return {
       message: 'user_logged',
       data: {
         access_token: tokens.authToken,
         refresh_token: tokens.refreshToken,
-        rest,
       },
       success: true,
     };
