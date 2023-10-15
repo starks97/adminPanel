@@ -4,6 +4,7 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  Param,
   Post,
   Req,
   Res,
@@ -80,19 +81,19 @@ export class AuthController {
   }
 
   @UseGuards(RefreshTokenGuard)
-  @Get('/refresh_token')
+  @Post('/refresh_token')
   @ApiOperation({ summary: 'Refresh Token' })
   @ApiSecurity('refresh_token')
   @ApiResponse({ status: 200, description: 'Token refreshed', type: String })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async refreshToken(@Req() req: Request, @Res() res: Response) {
+  async refreshToken(@Body('refresh_token') refreshToken: string, @Res() res: Response) {
     try {
-      const response = await this.authService.refreshToken(req.cookies.refresh_token);
-
+      const response = await this.authService.refreshToken(refreshToken);
       res.setHeader(AUTH_TOKEN, response.authToken);
       res.cookie(REFRESH_TOKEN, response.refreshToken, {
         maxAge: expirationTime,
         httpOnly: true,
+        secure: true,
       });
 
       return res.status(200).json({ message: 'token_refreshed', success: true, data: response });

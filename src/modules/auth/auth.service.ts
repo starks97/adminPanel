@@ -7,7 +7,6 @@ import { UserService } from './../user/user.service';
 import { JWTPayload, LoginStatus, RegistrationStatus } from './interfaces';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { AUTH_TOKEN, REFRESH_TOKEN } from 'src/consts';
-import { PassHasherService } from '../user/pass-hasher/pass-hasher.service';
 import { AuthErrorHandler, CustomErrorException, errorCases } from '../utils';
 
 /**
@@ -56,7 +55,6 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly cache: CacheSystemService,
-    private readonly hasher: PassHasherService,
   ) {
     this.cache._configModel('user', {
       include: {
@@ -195,11 +193,13 @@ export class AuthService {
    */
   private _decodeToken(token: string): JWTPayload | null {
     try {
-      if (!token) throw new AuthErrorHandler('Token', errorCases.TOKEN_NOT_FOUND, 403);
+      if (!token) {
+        throw new AuthErrorHandler('Token', errorCases.TOKEN_NOT_FOUND, 403);
+      }
 
       return this.jwtService.decode(token) as JWTPayload;
     } catch (error) {
-      console.log(error);
+      console.error('Error decoding token:', error);
       throw error;
     }
   }
