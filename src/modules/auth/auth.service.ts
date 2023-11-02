@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 
 import { CreateUserDto, LoginUserDto } from './../user/dto';
 import { UserService } from './../user/user.service';
-import { JWTPayload, LoginStatus, RegistrationStatus } from './interfaces';
+import { JWTPayload, LoginStatus, RefreshStatus, RegistrationStatus } from './interfaces';
 import { CacheSystemService } from '../cache-system/cache-system.service';
 import { AUTH_TOKEN, REFRESH_TOKEN } from 'src/consts';
 import { AuthErrorHandler, CustomErrorException, errorCases } from '../utils';
@@ -130,7 +130,7 @@ export class AuthService {
    * @param token - The current authentication token.
    * @returns The new authentication token.
    */
-  async refreshToken(token: string) {
+  async refreshToken(token: string): Promise<RefreshStatus> {
     try {
       const decodedToken = this._decodeToken(token);
 
@@ -164,7 +164,14 @@ export class AuthService {
 
       this.cache.setTokentoRedis(refreshTokenKey, tokens.refreshToken);
 
-      return tokens;
+      return {
+        message: 'token_refreshed',
+        data: {
+          access_token: tokens.authToken,
+          refresh_token: tokens.refreshToken,
+        },
+        success: true,
+      };
     } catch (error) {
       console.error(error);
       throw error;

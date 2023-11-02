@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  ForbiddenException,
-  Get,
-  Param,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -18,7 +7,6 @@ import {
   ApiResponse,
   ApiSecurity,
   ApiTags,
-  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 
@@ -27,7 +15,6 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { CreateUserDto, LoginUserDto } from '../user/dto';
 import { AUTH_TOKEN, REFRESH_TOKEN, expirationTime } from 'src/consts';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { CustomErrorException } from '../utils';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -60,7 +47,7 @@ export class AuthController {
     res.setHeader(AUTH_TOKEN, response.data?.access_token);
     res.cookie(REFRESH_TOKEN, response.data?.refresh_token, {
       maxAge: expirationTime,
-      httpOnly: true,
+      sameSite: 'none',
     });
 
     return res.status(200).json(response);
@@ -85,25 +72,16 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh Token' })
   @ApiSecurity('refresh_token')
   @ApiResponse({ status: 200, description: 'Token refreshed', type: String })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: 'Unauthorized from refresh' })
   async refreshToken(@Body('refresh_token') refreshToken: string, @Res() res: Response) {
-    try {
-      const response = await this.authService.refreshToken(refreshToken);
-      res.setHeader(AUTH_TOKEN, response.authToken);
-      res.cookie(REFRESH_TOKEN, response.refreshToken, {
-        maxAge: expirationTime,
-        httpOnly: true,
-        secure: true,
-      });
+    const response = await this.authService.refreshToken(refreshToken);
+    res.setHeader(AUTH_TOKEN, response.data.access_token);
+    res.cookie(REFRESH_TOKEN, response.data.refresh_token, {
+      maxAge: expirationTime,
+      secure: true,
+      sameSite: 'none',
+    });
 
-      return res.status(200).json({ message: 'token_refreshed', success: true, data: response });
-    } catch (error) {
-      if (error instanceof CustomErrorException) {
-        return res.status(error.getStatus()).json({ message: error.message });
-      } else {
-        console.error(error);
-        return res.status(500).json({ message: 'An error occurred' });
-      }
-    }
+    return res.status(200).json({ message: 'token_refreshed', success: true, data: response });
   }
 }
